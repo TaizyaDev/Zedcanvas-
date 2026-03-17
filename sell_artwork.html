@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Sell Artwork — ZedCanvas{% endblock %}
+
+{% block content %}
+
+<div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;
+            letter-spacing:0.08em;margin-bottom:1.25rem;">
+  List Artwork for Sale 🛒
+</div>
+
+{% if not my_posts %}
+<div style="background:var(--subtle);border-radius:12px;padding:1.5rem;
+            text-align:center;color:var(--muted);">
+  <div style="font-size:2rem;margin-bottom:0.5rem;">🎨</div>
+  <div style="font-weight:600;margin-bottom:0.3rem;">No posts available to list</div>
+  <div style="font-size:0.85rem;">Post some artwork first, then come back to sell it!</div>
+  <a href="{{ url_for('create_post') }}" class="btn btn-black btn-sm"
+     style="margin-top:1rem;display:inline-flex;">Post Artwork</a>
+</div>
+{% else %}
+<div class="card" style="padding:1.5rem;">
+  <form method="POST" action="{{ url_for('sell_artwork') }}">
+
+    <!-- Pick a post -->
+    <div class="form-group">
+      <label class="form-label">Select Artwork to Sell *</label>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;margin-top:0.4rem;"
+           id="post-grid">
+        {% for post in my_posts %}
+        <label style="cursor:pointer;position:relative;">
+          <input type="radio" name="post_id" value="{{ post.id }}"
+                 style="display:none;" onchange="selectPost(this, '{{ post.get('caption','')[:30] }}')"/>
+          <div class="post-option" id="opt-{{ post.id }}"
+               style="border:2px solid var(--border);border-radius:8px;overflow:hidden;
+                      transition:all 0.15s;">
+            {% if post.image %}
+              <img src="{{ post.image }}"
+                   style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" alt=""/>
+            {% else %}
+              <div style="aspect-ratio:1;background:var(--subtle);display:flex;
+                          align-items:center;justify-content:center;font-size:1.5rem;">🎨</div>
+            {% endif %}
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Title -->
+    <div class="form-group">
+      <label class="form-label">Listing Title *</label>
+      <input type="text" name="title" class="form-input" id="listing-title"
+             placeholder="e.g. Sunset Over Lusaka — Original Oil Painting" required/>
+    </div>
+
+    <!-- Description -->
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea name="description" class="form-input" rows="3"
+                placeholder="Size, medium, condition, framing, shipping info..."></textarea>
+    </div>
+
+    <!-- Category -->
+    <div class="form-group">
+      <label class="form-label">Category</label>
+      <select name="category" class="form-input">
+        <option value="">— Select category —</option>
+        {% for cat in categories %}
+          <option value="{{ cat }}">{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Price -->
+    <div class="form-group">
+      <label class="form-label">Price *</label>
+      <div style="display:flex;gap:0.5rem;">
+        <select name="currency" class="form-input" style="max-width:100px;">
+          <option value="ZMW">ZMW</option>
+          <option value="USD">USD</option>
+          <option value="ZAR">ZAR</option>
+        </select>
+        <input type="number" name="price" class="form-input"
+               placeholder="0.00" min="1" step="0.01" required/>
+      </div>
+    </div>
+
+    <div style="background:var(--subtle);border-radius:10px;padding:0.85rem 1rem;
+                margin-bottom:1.25rem;font-size:0.82rem;color:var(--muted);
+                display:flex;align-items:flex-start;gap:0.5rem;">
+      <svg class="icon icon-sm" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px;">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      Buyers will contact you directly via <strong>Messages</strong> to arrange payment and delivery.
+      ZedCanvas does not process payments.
+    </div>
+
+    <button type="submit" class="btn btn-black btn-full">List for Sale 🛒</button>
+    <a href="{{ url_for('marketplace') }}" class="btn btn-outline btn-full"
+       style="margin-top:0.5rem;">Cancel</a>
+  </form>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function selectPost(input, caption) {
+    // Reset all
+    document.querySelectorAll('.post-option').forEach(el => {
+      el.style.borderColor = 'var(--border)';
+    });
+    // Highlight selected
+    document.getElementById(`opt-${input.value}`).style.borderColor = 'var(--invert)';
+    // Pre-fill title
+    if (caption) document.getElementById('listing-title').placeholder = caption;
+  }
+</script>
+{% endblock %}

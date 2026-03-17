@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Analytics — ZedCanvas{% endblock %}
+
+{% block extra_style %}
+<style>
+  .stat-grid {
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:0.75rem; margin-bottom:1.5rem;
+  }
+  .stat-card {
+    background:#0a0a0a; color:#f8f8f8;
+    border-radius:12px; padding:1.25rem;
+    text-align:center;
+  }
+  .stat-card.light {
+    background:#f8f8f8; color:#0a0a0a;
+    border:1px solid #e2e2e2;
+  }
+  .stat-num {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:2.5rem; line-height:1;
+    margin-bottom:0.25rem;
+  }
+  .stat-label {
+    font-size:0.72rem; font-weight:600;
+    letter-spacing:0.08em; text-transform:uppercase;
+    opacity:0.6;
+  }
+  .section-head {
+    font-family:'Bebas Neue',sans-serif;
+    font-size:1.1rem; letter-spacing:0.08em;
+    margin-bottom:0.75rem; color:#0a0a0a;
+  }
+  /* Bar chart */
+  .bar-chart {
+    display:flex; align-items:flex-end; gap:0.5rem;
+    height:100px; padding:0 0.25rem;
+    border-bottom:2px solid #e2e2e2;
+    margin-bottom:0.5rem;
+  }
+  .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:0.25rem; }
+  .bar {
+    width:100%; background:#0a0a0a; border-radius:4px 4px 0 0;
+    min-height:4px; transition:height 0.5s;
+  }
+  .bar-day { font-size:0.68rem; color:#888; font-weight:500; }
+  .bar-val { font-size:0.68rem; color:#0a0a0a; font-weight:700; }
+
+  /* Top post */
+  .top-post {
+    display:flex; gap:0.75rem; align-items:center;
+    padding:0.75rem 0; border-bottom:1px solid #f0f0f0;
+  }
+  .top-post:last-child { border-bottom:none; }
+  .top-post-img {
+    width:56px; height:56px; border-radius:8px;
+    object-fit:cover; flex-shrink:0;
+  }
+  .top-post-ph {
+    width:56px; height:56px; border-radius:8px;
+    background:#f0f0f0; display:flex; align-items:center;
+    justify-content:center; font-size:1.5rem; flex-shrink:0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:0.08em;margin-bottom:1.25rem;">
+  Your Analytics 📊
+</div>
+
+<!-- Stats grid -->
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-num">{{ total_views }}</div>
+    <div class="stat-label">Profile Views<br/>Last 30 days</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">{{ followers }}</div>
+    <div class="stat-label">Followers</div>
+  </div>
+  <div class="stat-card light">
+    <div class="stat-num">{{ total_likes }}</div>
+    <div class="stat-label">Total Likes</div>
+  </div>
+  <div class="stat-card light">
+    <div class="stat-num">{{ total_comments }}</div>
+    <div class="stat-label">Comments</div>
+  </div>
+  <div class="stat-card light" style="grid-column:span 2;">
+    <div class="stat-num">{{ total_posts }}</div>
+    <div class="stat-label">Posts Published</div>
+  </div>
+</div>
+
+<!-- Views chart -->
+<div class="card" style="padding:1.25rem;">
+  <div class="section-head">Profile Views — Last 7 Days</div>
+  {% set max_views = days_data|map(attribute='count')|max if days_data else 1 %}
+  {% set max_views = max_views if max_views > 0 else 1 %}
+  <div class="bar-chart">
+    {% for d in days_data %}
+    <div class="bar-col">
+      <div class="bar-val">{{ d.count if d.count > 0 else '' }}</div>
+      <div class="bar"
+           style="height:{{ [(d.count / max_views * 80)|int, 4]|max }}px;">
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <div style="display:flex; gap:0.5rem; padding:0 0.25rem;">
+    {% for d in days_data %}
+    <div style="flex:1; text-align:center;">
+      <div class="bar-day">{{ d.day }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Recent viewers -->
+{% if recent_viewers %}
+<div class="card" style="padding:1.25rem;">
+  <div class="section-head">Recent Viewers</div>
+  <div style="display:flex; flex-wrap:wrap; gap:0.75rem;">
+    {% for viewer in recent_viewers %}
+    <a href="{{ url_for('profile', username=viewer.username) }}"
+       style="display:flex;flex-direction:column;align-items:center;gap:0.3rem;text-decoration:none;">
+      {% if viewer.avatar %}
+        <img src="{{ viewer.avatar }}"
+             class="avatar" style="width:44px;height:44px;" alt=""/>
+      {% else %}
+        <div class="avatar-ph" style="width:44px;height:44px;font-size:1rem;">
+          {{ viewer.username[0].upper() }}
+        </div>
+      {% endif %}
+      <span style="font-size:0.72rem;color:#444;font-weight:500;">@{{ viewer.username }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Top posts -->
+{% if top_posts %}
+<div class="card" style="padding:1.25rem;">
+  <div class="section-head">Top Posts by Likes</div>
+  {% for post in top_posts %}
+  <div class="top-post">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;
+                color:#e2e2e2;width:30px;text-align:center;">
+      {{ loop.index }}
+    </div>
+    {% if post.image %}
+      <img src="{{ post.image }}" class="top-post-img" alt=""/>
+    {% else %}
+      <div class="top-post-ph">🎨</div>
+    {% endif %}
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:0.88rem;font-weight:600;
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        {{ post.caption or 'No caption' }}
+      </div>
+      <div style="font-size:0.78rem;color:#888;margin-top:0.2rem;">
+        🖤 {{ post.likes|length }} likes · 💬 {{ post.comments|length }} comments
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Link back to profile -->
+<a href="{{ url_for('profile', username=me.username) }}"
+   class="btn btn-outline btn-full" style="margin-top:0.5rem;">
+  ← Back to Profile
+</a>
+
+{% endblock %}

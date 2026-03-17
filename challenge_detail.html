@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}{{ challenge.title }} — ZedCanvas{% endblock %}
+
+{% block extra_style %}
+<style>
+  .challenge-hero {
+    background:var(--invert); color:var(--invert-text);
+    border-radius:14px; padding:1.5rem; margin-bottom:1.25rem;
+    position:relative; overflow:hidden;
+  }
+  .challenge-hero::before {
+    content:'🎭'; position:absolute; right:-10px; top:-10px;
+    font-size:6rem; opacity:0.1;
+  }
+  .hero-status { font-size:0.72rem; font-weight:700; letter-spacing:0.1em;
+                 text-transform:uppercase; opacity:0.6; margin-bottom:0.4rem; }
+  .hero-title { font-family:'Playfair Display',serif;
+                font-size:1.5rem; font-weight:700; margin-bottom:0.5rem; }
+  .hero-desc { font-size:0.88rem; opacity:0.75; line-height:1.6; margin-bottom:1rem; }
+  .hero-meta { display:flex; gap:1rem; font-size:0.8rem; opacity:0.7; flex-wrap:wrap; }
+  .countdown {
+    background:rgba(255,255,255,0.1); border-radius:8px;
+    padding:0.5rem 0.85rem; font-weight:700; font-size:0.85rem;
+    display:inline-block; margin-top:0.75rem;
+  }
+
+  /* Leaderboard */
+  .entry-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; margin-bottom:0.75rem; overflow:hidden;
+  }
+  .entry-rank {
+    font-family:'Bebas Neue',sans-serif; font-size:2rem;
+    color:var(--border); min-width:36px; text-align:center;
+    padding:0 0.5rem;
+  }
+  .rank-1 { color:var(--invert); }
+  .rank-2 { color:var(--muted); }
+  .rank-3 { color:var(--muted); }
+  .winner-crown {
+    background:var(--invert); color:var(--invert-text);
+    font-size:0.7rem; font-weight:700; letter-spacing:0.06em;
+    text-transform:uppercase; padding:0.2rem 0.6rem;
+    border-radius:20px; white-space:nowrap;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<div class="challenge-hero">
+  <div class="hero-status">
+    {{ '🟢 Active' if challenge.status == 'active' else ('⏳ Upcoming' if challenge.status == 'upcoming' else '✓ Ended') }}
+  </div>
+  <div class="hero-title">{{ challenge.title }}</div>
+  <div class="hero-desc">{{ challenge.description }}</div>
+  <div class="hero-meta">
+    {% if challenge.category %}<span>🎨 {{ challenge.category }}</span>{% endif %}
+    <span>📅 {{ challenge.start_date }} → {{ challenge.end_date }}</span>
+    {% if challenge.prize %}<span>🏆 {{ challenge.prize }}</span>{% endif %}
+  </div>
+  {% if challenge.status == 'active' %}
+    <div class="countdown">⏱ {{ challenge.time_left }}</div>
+  {% endif %}
+</div>
+
+<!-- Action buttons -->
+<div style="display:flex;gap:0.5rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+  {% if challenge.status == 'active' %}
+    {% if my_entry %}
+      <div class="btn btn-gray btn-sm">✓ Already Entered</div>
+    {% else %}
+      <a href="{{ url_for('enter_challenge', cid=challenge.id) }}"
+         class="btn btn-black">🎨 Enter Challenge</a>
+    {% endif %}
+  {% endif %}
+  {% if owner and challenge.status == 'active' %}
+    <form method="POST" action="{{ url_for('end_challenge', cid=challenge.id) }}"
+          onsubmit="return confirm('End this challenge and crown the winner?')">
+      <button type="submit" class="btn btn-outline btn-sm">🏆 End & Crown Winner</button>
+    </form>
+  {% endif %}
+</div>
+
+<!-- Winner announcement -->
+{% if challenge.get('winner_uid') %}
+{% set winner_entry = entries[0] if entries else None %}
+{% if winner_entry %}
+<div style="background:var(--invert);color:var(--invert-text);border-radius:12px;
+            padding:1rem 1.25rem;margin-bottom:1.25rem;display:flex;
+            align-items:center;gap:0.75rem;">
+  <div style="font-size:2rem;">🏆</div>
+  <div>
+    <div style="font-weight:700;font-size:0.9rem;">Challenge Winner!</div>
+    <div style="font-size:0.85rem;opacity:0.75;">
+      @{{ winner_entry.author.username }} won with {{ winner_entry.likes|length }} likes
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
+<!-- Entries leaderboard -->
+<div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;
+            letter-spacing:0.08em;margin-bottom:0.75rem;">
+  Entries ({{ entries|length }})
+</div>
+
+{% if entries %}
+  {% for post in entries %}
+  <div class="entry-card">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:0.5rem;padding:0.75rem 1rem;">
+      <div class="entry-rank rank-{{ post.rank if post.rank <= 3 else '' }}">
+        {{ '🥇' if post.rank == 1 else ('🥈' if post.rank == 2 else ('🥉' if post.rank == 3 else post.rank)) }}
+      </div>
+      <a href="{{ url_for('profile', username=post.author.username) }}">
+        {% if post.author.avatar %}
+          <img src="{{ post.author.avatar }}"
+               class="avatar" style="width:36px;height:36px;" alt=""/>
+        {% else %}
+          <div class="avatar-ph" style="width:36px;height:36px;font-size:0.85rem;">
+            {{ post.author.username[0].upper() }}
+          </div>
+        {% endif %}
+      </a>
+      <div style="flex:1;">
+        <a href="{{ url_for('profile', username=post.author.username) }}"
+           style="font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text);">
+          @{{ post.author.username }}
+          {% if post.author.get('verified') %}
+            <span class="verified-badge">★</span>
+          {% endif %}
+        </a>
+        <div style="font-size:0.72rem;color:var(--muted);">{{ post.time_ago }}</div>
+      </div>
+      {% if challenge.get('winner_uid') == post.user_id %}
+        <span class="winner-crown">🏆 Winner</span>
+      {% endif %}
+    </div>
+
+    <!-- Image -->
+    {% if post.image %}
+      <img src="{{ post.image }}" class="post-image" alt=""/>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="post-actions">
+      <button class="action-btn like-btn {{ 'liked' if post.liked }}"
+              data-post-id="{{ post.id }}" onclick="toggleLike(this)">
+        <svg class="icon" viewBox="0 0 24 24"
+             style="{{ 'fill:var(--text);' if post.liked else '' }}">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+        <span class="action-count">{{ post.likes|length }}</span>
+      </button>
+    </div>
+
+    <!-- Caption -->
+    {% if post.caption %}
+    <div class="post-caption">
+      <strong>@{{ post.author.username }}</strong> {{ post.caption }}
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+{% else %}
+  <div style="text-align:center;padding:3rem 1rem;color:var(--muted);">
+    <div style="font-size:2.5rem;margin-bottom:0.5rem;">🎨</div>
+    <div style="font-weight:600;margin-bottom:0.3rem;">No entries yet</div>
+    <div style="font-size:0.85rem;">Be the first to enter!</div>
+    {% if challenge.status == 'active' and not my_entry %}
+      <a href="{{ url_for('enter_challenge', cid=challenge.id) }}"
+         class="btn btn-black btn-sm" style="margin-top:1rem;display:inline-flex;">
+        Enter Now
+      </a>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleLike(btn) {
+    fetch(`/post/${btn.dataset.postId}/like`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        const svg = btn.querySelector('svg');
+        svg.style.fill = data.liked ? 'var(--text)' : 'none';
+        btn.querySelector('.action-count').textContent = data.count;
+      });
+  }
+</script>
+{% endblock %}

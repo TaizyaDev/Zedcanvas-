@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>@{{ story.author.username }}'s Story — ZedCanvas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --black:#0a0a0a; --white:#f8f8f8;
+      --gray4:#888; --glass:rgba(255,255,255,0.12);
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body {
+      font-family:'DM Sans',sans-serif;
+      background:#000; color:var(--white);
+      min-height:100vh; overflow:hidden;
+      display:flex; flex-direction:column;
+    }
+
+    /* ── Story container ── */
+    .story-wrap {
+      position:relative; flex:1;
+      display:flex; align-items:center; justify-content:center;
+      max-height:100vh;
+    }
+    .story-img {
+      width:100%; max-height:100vh;
+      object-fit:contain; display:block;
+    }
+
+    /* ── Progress bar ── */
+    .progress-bar {
+      position:absolute; top:0; left:0; right:0;
+      height:3px; background:rgba(255,255,255,0.3);
+      z-index:10;
+    }
+    .progress-fill {
+      height:100%; background:var(--white);
+      animation:progress 5s linear forwards;
+    }
+    @keyframes progress {
+      from { width:0% }
+      to   { width:100% }
+    }
+
+    /* ── Header ── */
+    .story-header {
+      position:absolute; top:8px; left:0; right:0;
+      padding:0.75rem 1rem; z-index:10;
+      display:flex; align-items:center; gap:0.75rem;
+      background:linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+    }
+    .story-avatar {
+      width:38px; height:38px; border-radius:50%;
+      object-fit:cover; border:2px solid var(--white);
+      flex-shrink:0;
+    }
+    .story-avatar-ph {
+      width:38px; height:38px; border-radius:50%;
+      background:rgba(255,255,255,0.2);
+      display:flex; align-items:center; justify-content:center;
+      font-weight:700; font-size:0.9rem; flex-shrink:0;
+      border:2px solid var(--white);
+    }
+    .story-meta { flex:1; }
+    .story-username { font-weight:700; font-size:0.9rem; }
+    .story-time { font-size:0.72rem; opacity:0.7; }
+    .story-close {
+      width:34px; height:34px; border-radius:50%;
+      background:var(--glass); border:none; cursor:pointer;
+      color:var(--white); font-size:1.1rem;
+      display:flex; align-items:center; justify-content:center;
+      backdrop-filter:blur(8px); text-decoration:none;
+    }
+
+    /* ── Caption ── */
+    .story-caption {
+      position:absolute; bottom:80px; left:0; right:0;
+      padding:1rem; text-align:center;
+      background:linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+      font-size:0.95rem; font-weight:500;
+    }
+
+    /* ── Nav zones ── */
+    .nav-prev, .nav-next {
+      position:absolute; top:0; bottom:0; width:40%;
+      z-index:5; cursor:pointer;
+    }
+    .nav-prev { left:0; }
+    .nav-next { right:0; }
+
+    /* ── Bottom bar ── */
+    .story-bottom {
+      padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+      background:rgba(0,0,0,0.8);
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .view-count {
+      display:flex; align-items:center; gap:0.4rem;
+      font-size:0.85rem; opacity:0.8;
+    }
+    .delete-btn {
+      background:rgba(255,255,255,0.1); border:none; cursor:pointer;
+      color:var(--white); font-size:0.82rem; font-weight:600;
+      padding:0.4rem 0.85rem; border-radius:20px;
+    }
+
+    /* ── Viewers ── */
+    .viewers-sheet {
+      display:none; position:fixed; bottom:0; left:0; right:0;
+      background:#111; border-radius:16px 16px 0 0;
+      padding:1.5rem 1rem; z-index:50;
+      max-height:60vh; overflow-y:auto;
+    }
+    .viewers-sheet.open { display:block; animation:slideUp 0.25s ease; }
+    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .viewer-row {
+      display:flex; align-items:center; gap:0.75rem;
+      padding:0.65rem 0; border-bottom:1px solid #222;
+    }
+    .viewer-row:last-child { border-bottom:none; }
+  </style>
+</head>
+<body>
+
+  <div class="story-wrap">
+    <!-- Progress -->
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress"></div>
+    </div>
+
+    <!-- Header -->
+    <div class="story-header">
+      {% if story.author.avatar %}
+        <img src="{{ story.author.avatar }}" class="story-avatar" alt=""/>
+      {% else %}
+        <div class="story-avatar-ph">{{ story.author.username[0].upper() if story.author else '?' }}</div>
+      {% endif %}
+      <div class="story-meta">
+        <div class="story-username">@{{ story.author.username if story.author else 'Unknown' }}</div>
+        <div class="story-time">{{ story.created[:16] }}</div>
+      </div>
+      <a href="{{ url_for('feed') }}" class="story-close">✕</a>
+    </div>
+
+    <!-- Story image -->
+    <img src="{{ story.image }}" class="story-img" alt=""/>
+
+    <!-- Caption -->
+    {% if story.caption %}
+    <div class="story-caption">{{ story.caption }}</div>
+    {% endif %}
+
+    <!-- Nav zones -->
+    {% if prev_id %}
+    <div class="nav-prev" onclick="window.location='/stories/{{ prev_id }}'"></div>
+    {% endif %}
+    {% if next_id %}
+    <div class="nav-next" onclick="window.location='/stories/{{ next_id }}'"></div>
+    {% endif %}
+  </div>
+
+  <!-- Bottom bar -->
+  <div class="story-bottom">
+    <div class="view-count">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      {{ story.views|length }} view{{ 's' if story.views|length != 1 }}
+      {% if story.user_id == me.id and viewers %}
+        <button onclick="document.getElementById('viewers-sheet').classList.toggle('open')"
+                style="background:none;border:none;color:rgba(255,255,255,0.6);
+                       font-size:0.78rem;cursor:pointer;margin-left:0.25rem;">
+          · See who
+        </button>
+      {% endif %}
+    </div>
+
+    {% if story.user_id == me.id %}
+    <form method="POST" action="{{ url_for('delete_story', story_id=story.id) }}"
+          onsubmit="return confirm('Delete this story?')">
+      <button type="submit" class="delete-btn">Delete</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <!-- Viewers sheet -->
+  {% if story.user_id == me.id and viewers %}
+  <div class="viewers-sheet" id="viewers-sheet">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;
+                letter-spacing:0.08em;margin-bottom:1rem;">
+      Viewed by ({{ viewers|length }})
+    </div>
+    {% for viewer in viewers %}
+    <div class="viewer-row">
+      {% if viewer.avatar %}
+        <img src="{{ viewer.avatar }}"
+             style="width:38px;height:38px;border-radius:50%;object-fit:cover;" alt=""/>
+      {% else %}
+        <div style="width:38px;height:38px;border-radius:50%;background:#333;
+                    display:flex;align-items:center;justify-content:center;
+                    font-weight:700;font-size:0.9rem;flex-shrink:0;">
+          {{ viewer.username[0].upper() if viewer else '?' }}
+        </div>
+      {% endif %}
+      <div>
+        <div style="font-weight:600;font-size:0.88rem;">@{{ viewer.username }}</div>
+        <div style="font-size:0.75rem;color:var(--gray4);">{{ viewer.full_name }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <script>
+    // Apply saved theme
+    const theme = localStorage.getItem('zc-theme') || 'light';
+    // Story page is always dark - override
+    document.documentElement.setAttribute('data-theme', 'dark');
+
+    // Auto-advance to next story after 5s
+    setTimeout(() => {
+      {% if next_id %}
+        window.location = '/stories/{{ next_id }}';
+      {% else %}
+        window.location = '{{ url_for("feed") }}';
+      {% endif %}
+    }, 5000);
+  </script>
+</body>
+</html>

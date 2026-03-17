@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block title %}@{{ user.username }} — ZedCanvas{% endblock %}
+{% block content %}
+
+<!-- Profile header -->
+<div style="text-align:center; padding:1.5rem 1rem 1rem;">
+  {% if user.avatar %}
+    <img src="{{ user.avatar }}" class="avatar"
+         style="width:90px;height:90px;border:3px solid #0a0a0a;margin-bottom:0.75rem;" alt=""/>
+  {% else %}
+    <div class="avatar-ph" style="width:90px;height:90px;font-size:2rem;margin:0 auto 0.75rem;">
+      {{ user.username[0].upper() }}
+    </div>
+  {% endif %}
+
+  <div style="font-weight:700;font-size:1.1rem;">
+    {{ user.full_name }}
+    {% if user.get('verified') %}
+      <span class="verified-badge" title="Verified Artist">★</span>
+    {% endif %}
+  </div>
+  <div style="color:#888;font-size:0.88rem;margin-bottom:0.5rem;display:flex;align-items:center;justify-content:center;gap:0.4rem;">
+    @{{ user.username }}
+    {% if online_status %}
+      {% if online_status == "online" %}
+        <span style="display:inline-flex;align-items:center;gap:0.25rem;background:#e8f5e9;
+                     color:#2e7d32;padding:0.15rem 0.5rem;border-radius:20px;font-size:0.7rem;font-weight:600;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#2e7d32;display:inline-block;"></span>
+          Online
+        </span>
+      {% else %}
+        <span style="font-size:0.72rem;color:var(--muted);">{{ online_status }}</span>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  {% if user.art_style %}
+    <div style="display:inline-block;background:#f0f0f0;padding:0.2rem 0.75rem;
+                border-radius:20px;font-size:0.75rem;font-weight:600;margin-bottom:0.75rem;">
+      {{ user.art_style }}
+    </div>
+  {% endif %}
+
+  <!-- Achievements & Badges -->
+  {% set all_badges = {'first_post':'🎨','ten_posts':'🖼️','fifty_posts':'✨',
+     'first_like':'🖤','hundred_likes':'💫','first_follow':'👥',
+     'hundred_follows':'⭐','first_sale':'🛒','challenger':'🎭','trophy':'🏆'} %}
+  {% if user.get('badges') %}
+  <div style="display:flex;gap:0.4rem;justify-content:center;flex-wrap:wrap;margin-bottom:0.75rem;">
+    {% for badge in user.badges %}
+      <span title="{{ badge }}"
+            style="background:var(--subtle);padding:0.2rem 0.5rem;
+                   border-radius:20px;font-size:0.9rem;" >
+        {{ all_badges.get(badge, '🏅') }}
+      </span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if user.bio %}
+    <p style="font-size:0.88rem;color:#444;line-height:1.6;margin-bottom:0.75rem;max-width:300px;margin-left:auto;margin-right:auto;">
+      {{ user.bio }}
+    </p>
+  {% endif %}
+
+  <!-- Stats -->
+  <div style="display:flex;justify-content:center;gap:2rem;margin-bottom:1rem;">
+    <div style="text-align:center;">
+      <div style="font-weight:700;font-size:1.1rem;">{{ posts|length }}</div>
+      <div style="font-size:0.72rem;color:#888;text-transform:uppercase;letter-spacing:0.06em;">Posts</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-weight:700;font-size:1.1rem;">{{ user.followers|length }}</div>
+      <div style="font-size:0.72rem;color:#888;text-transform:uppercase;letter-spacing:0.06em;">Followers</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-weight:700;font-size:1.1rem;">{{ user.following|length }}</div>
+      <div style="font-size:0.72rem;color:#888;text-transform:uppercase;letter-spacing:0.06em;">Following</div>
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  {% if user.id == me.id %}
+    <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;">
+      <a href="{{ url_for('settings') }}" class="btn btn-outline btn-sm">Edit Profile</a>
+      <a href="{{ url_for('analytics') }}" class="btn btn-black btn-sm">📊 Analytics</a>
+    </div>
+  {% else %}
+    <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;">
+      <button class="btn btn-sm {{ 'btn-gray' if is_following else 'btn-black' }} follow-btn"
+              data-uid="{{ user.id }}" onclick="toggleFollow(this)">
+        {{ 'Following' if is_following else 'Follow' }}
+      </button>
+      <a href="{{ url_for('conversation', uid=user.id) }}"
+         class="btn btn-outline btn-sm">Message</a>
+      <!-- Report/Block -->
+      {% if user.id != me.id %}
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;justify-content:center;margin-top:0.4rem;">
+        <form method="POST" action="{{ url_for('block_user', uid=user.id) }}" style="display:inline;">
+          <button type="submit" class="btn btn-gray btn-sm" style="font-size:0.72rem;">
+            🚫 Block
+          </button>
+        </form>
+        <form method="POST" action="{{ url_for('report_user') }}" style="display:inline;">
+          <input type="hidden" name="target_id" value="{{ user.id }}"/>
+          <input type="hidden" name="type" value="user"/>
+          <input type="hidden" name="reason" value="Reported from profile"/>
+          <button type="submit" class="btn btn-gray btn-sm" style="font-size:0.72rem;">
+            ⚑ Report
+          </button>
+        </form>
+      </div>
+      {% endif %}
+      {% if is_owner %}
+        <form method="POST" action="{{ url_for('toggle_verified', uid=user.id) }}" style="display:inline;">
+          <button type="submit" class="btn btn-sm btn-gray">
+            {{ '✗ Remove Badge' if user.get('verified') else '★ Give Badge' }}
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+<hr style="border:none;border-top:1px solid #e2e2e2;margin-bottom:1rem;"/>
+
+<!-- Posts grid -->
+{% if posts %}
+  <!-- Pinned post -->
+  {% set pinned = posts|selectattr('pinned')|list %}
+  {% if pinned %}
+  <div style="margin-bottom:0.75rem;">
+    <div style="font-size:0.72rem;font-weight:600;letter-spacing:0.08em;
+                text-transform:uppercase;color:#888;margin-bottom:0.5rem;
+                display:flex;align-items:center;gap:0.3rem;">
+      📌 Pinned Post
+    </div>
+    {% set p = pinned[0] %}
+    <div class="card" style="border:2px solid #0a0a0a;">
+      {% if p.image %}
+        <img src="{{ p.image }}" class="post-image" alt=""/>
+      {% endif %}
+      <div class="post-actions">
+        <button class="action-btn like-btn {{ 'liked' if p.liked }}"
+                data-post-id="{{ p.id }}" onclick="toggleLike(this)">
+          {{ '🖤' if p.liked else '🤍' }}
+          <span class="action-count">{{ p.likes|length }}</span>
+        </button>
+        {% if user.id == me.id %}
+        <form method="POST" action="{{ url_for('unpin_post', post_id=p.id) }}" style="display:inline;">
+          <button class="action-btn" type="submit" title="Unpin">📌</button>
+        </form>
+        {% endif %}
+      </div>
+      {% if p.caption %}
+      <div class="post-caption"><strong>@{{ user.username }}</strong>{{ p.caption }}</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Posts grid -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin:0 -1rem;">
+    {% for post in posts %}
+      {% if post.image %}
+        <a href="#post-{{ post.id }}">
+          <img src="{{ post.image }}"
+               style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" alt=""/>
+        </a>
+      {% else %}
+        <div style="aspect-ratio:1;background:#f0f0f0;display:flex;align-items:center;
+                    justify-content:center;font-size:1.5rem;">🎨</div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <!-- Full posts below grid -->
+  <div style="margin-top:1rem;">
+    {% for post in posts %}
+    <div class="card" id="post-{{ post.id }}">
+      <div class="post-header">
+        <div class="post-avatar-ph">{{ user.username[0].upper() }}</div>
+        <div class="post-author">
+          <span class="post-username">@{{ user.username }}</span>
+          <div class="post-time">{{ post.time_ago }}</div>
+        </div>
+        {% if post.user_id == me.id %}
+        <div style="display:flex;gap:0.25rem;">
+          {% if not post.get('pinned') %}
+          <form method="POST" action="{{ url_for('pin_post', post_id=post.id) }}" style="display:inline;">
+            <button style="background:none;border:none;cursor:pointer;color:#bbb;font-size:0.95rem;" title="Pin post">📌</button>
+          </form>
+          {% endif %}
+          <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}"
+                onsubmit="return confirm('Delete?')">
+            <button style="background:none;border:none;cursor:pointer;color:#bbb;">🗑</button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+      {% if post.image %}
+        <img src="{{ post.image }}" class="post-image" alt=""/>
+      {% endif %}
+      <div class="post-actions">
+        <button class="action-btn like-btn {{ 'liked' if post.liked }}"
+                data-post-id="{{ post.id }}" onclick="toggleLike(this)">
+          {{ '🖤' if post.liked else '🤍' }}
+          <span class="action-count">{{ post.likes|length }}</span>
+        </button>
+        <span class="action-btn">💬 <span class="action-count">{{ post.comments|length }}</span></span>
+      </div>
+      {% if post.caption %}
+      <div class="post-caption"><strong>@{{ user.username }}</strong>{{ post.caption }}</div>
+      {% endif %}
+      {% if post.get('category') or post.get('tags') %}
+      <div style="padding:0 1rem 0.75rem;display:flex;flex-wrap:wrap;gap:0.35rem;">
+        {% if post.get('category') %}
+          <span style="background:#f0f0f0;color:#444;padding:0.2rem 0.6rem;
+                       border-radius:20px;font-size:0.72rem;font-weight:600;">
+            {{ post.category }}
+          </span>
+        {% endif %}
+        {% for tag in post.get('tags', []) %}
+          <a href="{{ url_for('tag_posts', tag=tag) }}"
+             style="color:#0a0a0a;font-size:0.78rem;font-weight:500;text-decoration:none;">
+            #{{ tag }}
+          </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+{% else %}
+  <div class="empty">
+    <div class="empty-icon">🎨</div>
+    <h3>No posts yet</h3>
+    {% if user.id == me.id %}
+      <a href="{{ url_for('create_post') }}" class="btn btn-black btn-sm" style="margin-top:1rem;">Share your first post</a>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleLike(btn) {
+    const postId = btn.dataset.postId;
+    fetch(`/post/${postId}/like`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        btn.innerHTML = (data.liked ? '🖤' : '🤍') + ` <span class="action-count">${data.count}</span>`;
+      });
+  }
+  function toggleFollow(btn) {
+    const uid = btn.dataset.uid;
+    fetch(`/follow/${uid}`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        btn.textContent = data.following ? 'Following' : 'Follow';
+        btn.className = `btn btn-sm ${data.following ? 'btn-gray' : 'btn-black'} follow-btn`;
+        // Update follower count
+        const stats = document.querySelectorAll('.stat-num');
+      });
+  }
+</script>
+{% endblock %}

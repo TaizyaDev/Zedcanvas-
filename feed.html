@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+{% block title %}Home — ZedCanvas{% endblock %}
+{% block content %}
+
+
+<!-- ── Stories Bar ── -->
+{% if stories or true %}
+<div style="margin:-1rem -1rem 1rem;padding:1rem 1rem 0.75rem;
+            background:var(--surface);border-bottom:1px solid var(--border);
+            overflow-x:auto;display:flex;gap:0.75rem;scrollbar-width:none;">
+
+  <!-- Add story button -->
+  <a href="{{ url_for('create_story') }}"
+     style="display:flex;flex-direction:column;align-items:center;
+            gap:0.3rem;text-decoration:none;flex-shrink:0;">
+    <div style="width:58px;height:58px;border-radius:50%;
+                background:var(--subtle);border:2px dashed var(--border);
+                display:flex;align-items:center;justify-content:center;
+                color:var(--muted);font-size:1.4rem;position:relative;">
+      +
+    </div>
+    <span style="font-size:0.62rem;color:var(--muted);font-weight:600;
+                 letter-spacing:0.04em;text-transform:uppercase;">Your Story</span>
+  </a>
+
+  <!-- Story circles -->
+  {% for story in stories %}
+  <a href="{{ url_for('view_story', story_id=story.id) }}"
+     style="display:flex;flex-direction:column;align-items:center;
+            gap:0.3rem;text-decoration:none;flex-shrink:0;">
+    <div style="width:58px;height:58px;border-radius:50%;padding:2px;
+                background:{{ 'var(--border)' if story.seen else 'var(--invert)' }};">
+      <div style="width:100%;height:100%;border-radius:50%;overflow:hidden;
+                  border:2px solid var(--surface);">
+        {% if story.author.avatar %}
+          <img src="{{ story.author.avatar }}"
+               style="width:100%;height:100%;object-fit:cover;" alt=""/>
+        {% else %}
+          <div style="width:100%;height:100%;background:var(--subtle);
+                      display:flex;align-items:center;justify-content:center;
+                      font-weight:700;font-size:1rem;color:var(--text);">
+            {{ story.author.username[0].upper() if story.author else '?' }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    <span style="font-size:0.62rem;color:var(--text);font-weight:600;
+                 letter-spacing:0.02em;max-width:58px;overflow:hidden;
+                 text-overflow:ellipsis;white-space:nowrap;">
+      {{ story.author.username if story.author else '' }}
+    </span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if posts %}
+  {% for post in posts %}
+  <div class="card">
+    <!-- Repost indicator -->
+    {% if post.get('repost_of') %}
+    <div style="display:flex;align-items:center;gap:0.4rem;padding:0.5rem 1rem 0;
+                font-size:0.75rem;color:var(--muted);font-weight:500;">
+      <svg class="icon icon-sm" viewBox="0 0 24 24">
+        <polyline points="17 1 21 5 17 9"/>
+        <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+        <polyline points="7 23 3 19 7 15"/>
+        <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+      </svg>
+      <a href="{{ url_for('profile', username=post.author.username) }}"
+         style="color:var(--muted);text-decoration:none;font-weight:600;">
+        @{{ post.author.username }}
+      </a> reposted
+    </div>
+    {% endif %}
+    <!-- Header -->
+    <div class="post-header">
+      <a href="{{ url_for('profile', username=post.author.username) }}">
+        {% if post.author.avatar %}
+          <img src="{{ post.author.avatar }}" class="post-avatar" alt=""/>
+        {% else %}
+          <div class="post-avatar-ph">{{ post.author.username[0].upper() }}</div>
+        {% endif %}
+      </a>
+      <div class="post-author">
+        {% if post.get('repost_of') and post.orig_author %}
+          <a href="{{ url_for('profile', username=post.orig_author.username) }}" class="post-username">
+            @{{ post.orig_author.username }}
+            {% if post.orig_author.get('verified') %}<span class="verified-badge">★</span>{% endif %}
+          </a>
+        {% else %}
+          <a href="{{ url_for('profile', username=post.author.username) }}" class="post-username">
+            @{{ post.author.username }}
+            {% if post.author.get('verified') %}<span class="verified-badge">★</span>{% endif %}
+          </a>
+        {% endif %}
+        <div class="post-time">{{ post.time_ago }}</div>
+      </div>
+      {% if post.user_id == me.id %}
+      <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}"
+            onsubmit="return confirm('Delete this post?')">
+        <button style="background:none;border:none;cursor:pointer;color:#bbb;font-size:1rem;">🗑</button>
+      </form>
+      {% endif %}
+    </div>
+
+    <!-- Image -->
+    {% if post.image %}
+      <img src="{{ post.image }}" class="post-image" alt=""/>
+    {% endif %}
+
+    <!-- Poll -->
+    {% if post.get('is_poll') and post.get('poll') %}
+    {% set poll = post.poll %}
+    {% set expires = poll.get('expires', '') %}
+    {% set total_votes = poll.options | map(attribute='votes') | map('length') | sum %}
+    {% set my_vote = namespace(found=-1) %}
+    {% for opt in poll.options %}
+      {% if me.id in opt.votes %}{% set my_vote.found = loop.index0 %}{% endif %}
+    {% endfor %}
+    <div style="padding:0 1rem 0.75rem;" id="poll-{{ post.id }}">
+      {% for i, opt in poll.options | enumerate %}
+      <div style="margin-bottom:0.5rem;">
+        {% if my_vote.found >= 0 %}
+          {% set pct = ((opt.votes | length) / total_votes * 100) | round | int if total_votes > 0 else 0 %}
+          <div style="position:relative;background:var(--subtle);border-radius:8px;
+                      overflow:hidden;padding:0.6rem 0.75rem;cursor:default;
+                      border:1.5px solid {{ 'var(--invert)' if my_vote.found == i else 'var(--border)' }};">
+            <div style="position:absolute;left:0;top:0;bottom:0;background:{{ 'rgba(0,0,0,0.08)' if my_vote.found == i else 'rgba(0,0,0,0.04)' }};
+                        width:{{ pct }}%;transition:width 0.4s;"></div>
+            <div style="position:relative;display:flex;justify-content:space-between;
+                        font-size:0.88rem;font-weight:{{ '600' if my_vote.found == i else '400' }};">
+              <span>{{ opt.text }} {{ '✓' if my_vote.found == i }}</span>
+              <span>{{ pct }}%</span>
+            </div>
+          </div>
+        {% else %}
+          <button onclick="votePoll('{{ post.id }}', {{ i }})"
+                  style="width:100%;text-align:left;padding:0.6rem 0.75rem;
+                         border:1.5px solid var(--border);border-radius:8px;
+                         background:var(--surface);font-family:'DM Sans',sans-serif;
+                         font-size:0.88rem;cursor:pointer;color:var(--text);
+                         transition:border-color 0.15s;"
+                  onmouseover="this.style.borderColor='var(--invert)'"
+                  onmouseout="this.style.borderColor='var(--border)'">
+            {{ opt.text }}
+          </button>
+        {% endif %}
+      </div>
+      {% endfor %}
+      <div style="font-size:0.75rem;color:var(--muted);margin-top:0.25rem;">
+        {{ total_votes }} vote{{ 's' if total_votes != 1 }}
+        {% if expires %}
+          · {% if expires > now %}Ends {{ expires[:10] }}{% else %}Poll ended{% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="post-actions">
+      <!-- Like -->
+      <button class="action-btn like-btn {{ 'liked' if post.liked }}"
+              data-post-id="{{ post.id }}" onclick="toggleLike(this)">
+        <svg class="icon" viewBox="0 0 24 24"
+             style="{{ 'fill:var(--text);' if post.liked else '' }}">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+        <span class="action-count">{{ post.likes|length }}</span>
+      </button>
+      <!-- Comment -->
+      <button class="action-btn" onclick="toggleComments('{{ post.id }}')">
+        <svg class="icon" viewBox="0 0 24 24">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span class="action-count">{{ post.comments|length }}</span>
+      </button>
+      <!-- Message -->
+      <a href="{{ url_for('conversation', uid=post.user_id) }}" class="action-btn" style="text-decoration:none;">
+        <svg class="icon" viewBox="0 0 24 24">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </a>
+      <!-- Repost -->
+      {% if post.user_id != me.id and not post.get('repost_of') %}
+      <button class="action-btn repost-btn {{ 'reposted' if post.reposted }}"
+              data-post-id="{{ post.id }}" onclick="toggleRepost(this)"
+              style="{{ 'opacity:1;' if post.reposted else 'opacity:0.5;' }}">
+        <svg class="icon" viewBox="0 0 24 24"
+             style="{{ 'stroke:var(--text);stroke-width:2.5;' if post.reposted else '' }}">
+          <polyline points="17 1 21 5 17 9"/>
+          <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+          <polyline points="7 23 3 19 7 15"/>
+          <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+        </svg>
+        <span class="action-count">{{ post.repost_count }}</span>
+      </button>
+      {% endif %}
+      <!-- Bookmark -->
+      <button class="action-btn bookmark-btn" data-post-id="{{ post.id }}"
+              onclick="toggleBookmark(this)" style="margin-left:auto;">
+        <svg class="icon" viewBox="0 0 24 24">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Caption with @mentions -->
+    {% if post.caption and not post.get('is_poll') %}
+    <div class="post-caption">
+      <strong>@{{ post.author.username }}</strong>
+      {% set words = post.caption.split() %}
+      {% for word in words %}
+        {%- if word.startswith('@') -%}
+          <a href="/u/{{ word[1:] | lower }}"
+             style="color:var(--text);font-weight:600;text-decoration:none;">{{ word }}</a>
+        {%- else -%}
+          {{ word }}
+        {%- endif -%}
+        {{ ' ' }}
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Category & Tags -->
+    {% if post.get('category') or post.get('tags') %}
+    <div style="padding:0 1rem 0.75rem;display:flex;flex-wrap:wrap;gap:0.35rem;">
+      {% if post.get('category') %}
+        <a href="{{ url_for('category_posts', category=post.category) }}"
+           style="background:#f0f0f0;color:#444;padding:0.2rem 0.6rem;border-radius:20px;
+                  font-size:0.72rem;font-weight:600;text-decoration:none;">
+          {{ post.category }}
+        </a>
+      {% endif %}
+      {% for tag in post.get('tags', []) %}
+        <a href="{{ url_for('tag_posts', tag=tag) }}"
+           style="color:#0a0a0a;font-size:0.78rem;font-weight:500;text-decoration:none;">
+          #{{ tag }}
+        </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Comments -->
+    <div id="comments-{{ post.id }}" style="display:none;">
+      <div class="comments-section" id="comment-list-{{ post.id }}">
+        {% for c in post.comments %}
+        <div class="comment" id="comment-{{ c.id }}">
+          <a href="{{ url_for('profile', username=c.username) }}">
+            {% if c.avatar %}
+              <img src="{{ c.avatar }}" class="comment-av" alt=""/>
+            {% else %}
+              <div class="comment-av-ph">{{ c.username[0].upper() }}</div>
+            {% endif %}
+          </a>
+          <div class="comment-body" style="flex:1;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div>
+                <a href="{{ url_for('profile', username=c.username) }}"
+                   class="comment-user" style="text-decoration:none;color:var(--text);">
+                  @{{ c.username }}
+                </a>
+                <div class="comment-text">{{ c.text }}</div>
+              </div>
+              {% if c.user_id == me.id %}
+              <form method="POST"
+                    action="{{ url_for('delete_comment', post_id=post.id, comment_id=c.id) }}"
+                    style="display:inline;">
+                <button style="background:none;border:none;color:var(--muted);
+                               font-size:0.72rem;cursor:pointer;padding:0 0.25rem;">✕</button>
+              </form>
+              {% endif %}
+            </div>
+            <!-- Reply button -->
+            <button onclick="showReplyBox('{{ post.id }}', '{{ c.id }}', '@{{ c.username }}')"
+                    style="background:none;border:none;color:var(--muted);font-size:0.72rem;
+                           font-weight:600;cursor:pointer;margin-top:0.25rem;padding:0;">
+              Reply
+            </button>
+
+            <!-- Replies -->
+            {% if c.get('replies') %}
+            <div style="margin-top:0.5rem;border-left:2px solid var(--border);padding-left:0.75rem;">
+              {% for r in c.replies %}
+              <div class="comment" style="padding:0.4rem 0;border-bottom:none;">
+                <a href="{{ url_for('profile', username=r.username) }}">
+                  {% if r.avatar %}
+                    <img src="{{ r.avatar }}"
+                         style="width:22px;height:22px;border-radius:50%;object-fit:cover;" alt=""/>
+                  {% else %}
+                    <div style="width:22px;height:22px;border-radius:50%;background:var(--subtle);
+                                display:flex;align-items:center;justify-content:center;
+                                font-size:0.6rem;font-weight:700;flex-shrink:0;">
+                      {{ r.username[0].upper() }}
+                    </div>
+                  {% endif %}
+                </a>
+                <div class="comment-body" style="flex:1;">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div>
+                      <a href="{{ url_for('profile', username=r.username) }}"
+                         class="comment-user" style="text-decoration:none;color:var(--text);font-size:0.78rem;">
+                        @{{ r.username }}
+                      </a>
+                      <div class="comment-text" style="font-size:0.82rem;">{{ r.text }}</div>
+                    </div>
+                    {% if r.user_id == me.id %}
+                    <form method="POST"
+                          action="{{ url_for('delete_comment', post_id=post.id, comment_id=r.id) }}"
+                          style="display:inline;">
+                      <button style="background:none;border:none;color:var(--muted);
+                                     font-size:0.7rem;cursor:pointer;padding:0 0.25rem;">✕</button>
+                    </form>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Reply box (hidden, shown on reply tap) -->
+      <div id="reply-box-{{ post.id }}" style="display:none;padding:0.5rem 1rem;
+           background:var(--subtle);border-top:1px solid var(--border);">
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.35rem;"
+             id="reply-label-{{ post.id }}">Replying to...</div>
+        <form method="POST" action="{{ url_for('comment_post', post_id=post.id) }}"
+              class="comment-form" style="padding:0;">
+          <input type="hidden" name="reply_to" id="reply-to-{{ post.id }}" value=""/>
+          <input type="text" name="comment" class="comment-input"
+                 placeholder="Write a reply..." required
+                 id="reply-input-{{ post.id }}"/>
+          <button type="submit" class="comment-submit">Reply</button>
+        </form>
+        <button onclick="hideReplyBox('{{ post.id }}')"
+                style="background:none;border:none;color:var(--muted);
+                       font-size:0.72rem;cursor:pointer;margin-top:0.35rem;">
+          Cancel
+        </button>
+      </div>
+
+      <!-- Main comment form -->
+      <form method="POST" action="{{ url_for('comment_post', post_id=post.id) }}"
+            class="comment-form">
+        <input type="hidden" name="reply_to" value=""/>
+        <input type="text" name="comment" class="comment-input"
+               placeholder="Add a comment..." required/>
+        <button type="submit" class="comment-submit">Post</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+
+{% else %}
+  <div class="empty">
+    <div class="empty-icon">🎨</div>
+    <h3>Your feed is empty</h3>
+    <p style="font-size:0.88rem; margin:0.5rem 0 1.5rem;">Follow artists to see their work here</p>
+    <a href="{{ url_for('discover') }}" class="btn btn-black btn-sm">Discover Artists</a>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function showReplyBox(postId, commentId, username) {
+    const box   = document.getElementById(`reply-box-${postId}`);
+    const label = document.getElementById(`reply-label-${postId}`);
+    const input = document.getElementById(`reply-input-${postId}`);
+    const hiddenInput = document.getElementById(`reply-to-${postId}`);
+    hiddenInput.value = commentId;
+    label.textContent = `Replying to ${username}`;
+    box.style.display = 'block';
+    input.focus();
+    // Scroll to reply box
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function hideReplyBox(postId) {
+    document.getElementById(`reply-box-${postId}`).style.display = 'none';
+    document.getElementById(`reply-to-${postId}`).value = '';
+  }
+
+  function votePoll(postId, optionIndex) {
+    const form = new FormData();
+    form.append('option', optionIndex);
+    fetch(`/polls/${postId}/vote`, { method: 'POST', body: form })
+      .then(r => r.json())
+      .then(data => {
+        if (data.results) {
+          // Reload poll section
+          window.location.reload();
+        }
+      });
+  }
+
+  function toggleRepost(btn) {
+    fetch(`/post/${btn.dataset.postId}/repost`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        const svg = btn.querySelector('svg');
+        btn.style.opacity = data.reposted ? '1' : '0.5';
+        svg.style.strokeWidth = data.reposted ? '2.5' : '2';
+      });
+  }
+
+  function toggleBookmark(btn) {
+    fetch(`/post/${btn.dataset.postId}/bookmark`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        btn.style.opacity = data.saved ? '1' : '0.4';
+        btn.title = data.saved ? 'Saved!' : 'Save post';
+      });
+  }
+
+  function toggleLike(btn) {
+    const postId = btn.dataset.postId;
+    fetch(`/post/${postId}/like`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        btn.innerHTML = (data.liked ? '🖤' : '🤍') + ` <span class="action-count">${data.count}</span>`;
+        btn.classList.toggle('liked', data.liked);
+      });
+  }
+
+  function toggleComments(postId) {
+    const el = document.getElementById(`comments-${postId}`);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Create Poll — ZedCanvas{% endblock %}
+
+{% block content %}
+
+<div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;
+            letter-spacing:0.08em;margin-bottom:1.25rem;">
+  Create Poll 🗳️
+</div>
+
+<div class="card" style="padding:1.5rem;">
+  <form method="POST" action="{{ url_for('create_poll') }}">
+
+    <div class="form-group">
+      <label class="form-label">Your Question *</label>
+      <input type="text" name="question" class="form-input"
+             placeholder="e.g. What's your favourite art style?" required/>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Options (min 2, max 4) *</label>
+      <div style="display:flex;flex-direction:column;gap:0.5rem;">
+        <input type="text" name="option1" class="form-input" placeholder="Option 1" required/>
+        <input type="text" name="option2" class="form-input" placeholder="Option 2" required/>
+        <input type="text" name="option3" class="form-input" placeholder="Option 3 (optional)"/>
+        <input type="text" name="option4" class="form-input" placeholder="Option 4 (optional)"/>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Poll Duration</label>
+      <select name="duration" class="form-input">
+        <option value="1">1 hour</option>
+        <option value="6">6 hours</option>
+        <option value="12">12 hours</option>
+        <option value="24" selected>24 hours</option>
+        <option value="48">2 days</option>
+        <option value="168">1 week</option>
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn-black btn-full">Post Poll 🗳️</button>
+    <a href="{{ url_for('feed') }}" class="btn btn-outline btn-full"
+       style="margin-top:0.5rem;">Cancel</a>
+  </form>
+</div>
+
+{% endblock %}

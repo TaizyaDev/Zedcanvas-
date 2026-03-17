@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Join ZedCanvas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root { --black:#0a0a0a; --white:#f8f8f8; --gray4:#888; --gray6:#e2e2e2; --gray7:#f0f0f0; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'DM Sans',sans-serif; background:var(--black); min-height:100vh;
+           display:flex; flex-direction:column; align-items:center; justify-content:center; padding:1.5rem; }
+    .box { background:var(--white); border-radius:16px; padding:2rem 1.75rem;
+           width:100%; max-width:420px; }
+    .logo { font-family:'Bebas Neue',sans-serif; font-size:2rem; letter-spacing:0.05em;
+            text-align:center; margin-bottom:0.25rem; }
+    .subtitle { text-align:center; color:var(--gray4); font-size:0.85rem; margin-bottom:1.75rem; }
+    .flash { padding:0.7rem 1rem; border-radius:8px; font-size:0.85rem; font-weight:500; margin-bottom:0.75rem; }
+    .flash.error { background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; }
+    .form-group { margin-bottom:1rem; }
+    label { display:block; font-size:0.72rem; font-weight:600; letter-spacing:0.08em;
+            text-transform:uppercase; color:var(--gray4); margin-bottom:0.35rem; }
+    input, select, textarea {
+      width:100%; padding:0.75rem 1rem; border:1.5px solid var(--gray6);
+      border-radius:10px; font-family:'DM Sans',sans-serif; font-size:0.92rem;
+      background:#fff; color:var(--black); transition:border-color 0.2s; -webkit-appearance:none;
+    }
+    input:focus, select:focus, textarea:focus { outline:none; border-color:var(--black); }
+    textarea { resize:vertical; min-height:70px; }
+    select { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+             background-repeat:no-repeat; background-position:right 1rem center; padding-right:2.5rem; }
+    .photo-wrap { display:flex; justify-content:center; margin-bottom:0.75rem; }
+    .photo-circle {
+      width:80px; height:80px; border-radius:50%; background:var(--black);
+      display:flex; align-items:center; justify-content:center;
+      font-size:2rem; cursor:pointer; overflow:hidden; border:3px solid var(--gray6);
+      transition:border-color 0.2s;
+    }
+    .photo-circle:hover { border-color:var(--black); }
+    .photo-circle img { width:100%; height:100%; object-fit:cover; }
+    .photo-hint { text-align:center; font-size:0.75rem; color:var(--gray4); margin-bottom:1rem; }
+    .btn {
+      width:100%; padding:0.85rem; border-radius:10px; border:none;
+      background:var(--black); color:var(--white);
+      font-family:'DM Sans',sans-serif; font-size:0.95rem; font-weight:700;
+      cursor:pointer; margin-top:0.5rem; transition:background 0.18s;
+    }
+    .btn:hover { background:#222; }
+    .signin-link { text-align:center; font-size:0.85rem; color:var(--gray4); margin-top:1.25rem; }
+    .signin-link a { color:var(--black); font-weight:600; text-decoration:none; }
+    .divider { border:none; border-top:1px solid var(--gray6); margin:1.25rem 0; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="logo">ZedCanvas</div>
+    <div class="subtitle">Join Zambia's art community 🇿🇲</div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="flash {{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('signup') }}" enctype="multipart/form-data">
+
+      <!-- Profile photo -->
+      <div class="photo-wrap">
+        <div class="photo-circle" onclick="document.getElementById('photo').click()">
+          <img id="preview" src="" style="display:none;"/>
+          <span id="preview-icon">📷</span>
+        </div>
+      </div>
+      <div class="photo-hint">Tap to add profile photo</div>
+      <input type="file" id="photo" name="photo" accept="image/*"
+             style="display:none;" onchange="previewPhoto(this)"/>
+
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" name="full_name" placeholder="e.g. Chanda Mwale"
+               value="{{ form.get('full_name','') }}" required/>
+      </div>
+
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" name="username" placeholder="e.g. chanda_art"
+               value="{{ form.get('username','') }}" required/>
+      </div>
+
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" name="email" placeholder="your@email.com"
+               value="{{ form.get('email','') }}" required/>
+      </div>
+
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" name="password" placeholder="Min. 6 characters" required/>
+      </div>
+
+      <hr class="divider"/>
+
+      <div class="form-group">
+        <label>Art Style / Specialty</label>
+        <select name="art_style">
+          <option value="">— Select your style —</option>
+          {% for style in art_styles %}
+            <option value="{{ style }}" {{ 'selected' if form.get('art_style') == style }}>{{ style }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Bio</label>
+        <textarea name="bio" placeholder="Tell the world about your art...">{{ form.get('bio','') }}</textarea>
+      </div>
+
+      <button class="btn" type="submit">Create Account</button>
+    </form>
+
+    <div class="signin-link">
+      Already have an account? <a href="{{ url_for('login') }}">Sign in</a>
+    </div>
+  </div>
+
+  <script>
+    function previewPhoto(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img  = document.getElementById('preview');
+          const icon = document.getElementById('preview-icon');
+          img.src = e.target.result;
+          img.style.display = 'block';
+          icon.style.display = 'none';
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Enter {{ challenge.title }} — ZedCanvas{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom:1.25rem;">
+  <a href="{{ url_for('challenge_detail', cid=challenge.id) }}"
+     style="font-size:0.82rem;color:var(--muted);text-decoration:none;">
+    ← Back to challenge
+  </a>
+</div>
+
+<!-- Challenge info strip -->
+<div style="background:var(--invert);color:var(--invert-text);border-radius:12px;
+            padding:1rem 1.25rem;margin-bottom:1.25rem;display:flex;
+            align-items:center;justify-content:space-between;">
+  <div>
+    <div style="font-size:0.72rem;opacity:0.6;text-transform:uppercase;
+                letter-spacing:0.08em;font-weight:700;">Entering</div>
+    <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:1rem;">
+      {{ challenge.title }}
+    </div>
+  </div>
+  <div style="font-size:0.8rem;opacity:0.7;">⏱ {{ challenge.time_left }}</div>
+</div>
+
+<div class="card" style="padding:1.5rem;">
+  <form method="POST" action="{{ url_for('enter_challenge', cid=challenge.id) }}"
+        enctype="multipart/form-data">
+
+    <!-- Image upload -->
+    <div style="margin-bottom:1.25rem;">
+      <div class="form-label">Your Artwork *</div>
+      <div id="upload-area"
+           style="border:2px dashed var(--border);border-radius:12px;
+                  padding:2.5rem 1rem;text-align:center;cursor:pointer;
+                  transition:all 0.18s;background:var(--subtle);"
+           onclick="document.getElementById('image').click()">
+        <div style="font-size:2.5rem;margin-bottom:0.5rem;">🖼️</div>
+        <div style="font-weight:600;font-size:0.9rem;color:var(--text);">
+          Tap to upload your entry
+        </div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:0.25rem;">
+          JPG, PNG, WEBP — max 5MB
+        </div>
+      </div>
+      <img id="preview" src="" style="display:none;width:100%;border-radius:12px;
+           margin-top:0.75rem;max-height:350px;object-fit:cover;" alt=""/>
+      <input type="file" id="image" name="image" accept="image/*"
+             style="display:none;" onchange="previewImage(this)" required/>
+    </div>
+
+    <!-- Caption -->
+    <div class="form-group">
+      <label class="form-label">Caption / Artist Statement</label>
+      <textarea name="caption" class="form-input" rows="3"
+                placeholder="Tell us about your piece and how it fits the challenge..."></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-black btn-full">
+      Submit Entry 🎭
+    </button>
+  </form>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function previewImage(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const preview = document.getElementById('preview');
+        const area    = document.getElementById('upload-area');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        area.style.display    = 'none';
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+</script>
+{% endblock %}

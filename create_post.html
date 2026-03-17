@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}New Post — ZedCanvas{% endblock %}
+{% block content %}
+
+<div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:0.08em;margin-bottom:1.25rem;">
+  New Post
+</div>
+
+<div class="card" style="padding:1.5rem;">
+  <form method="POST" action="{{ url_for('create_post') }}" enctype="multipart/form-data">
+
+    <!-- Image upload -->
+    <div style="margin-bottom:1.25rem;">
+      <div id="upload-area"
+           style="border:2px dashed #e2e2e2;border-radius:12px;padding:2.5rem 1rem;
+                  text-align:center;cursor:pointer;transition:all 0.18s;"
+           onclick="document.getElementById('image').click()"
+           ondragover="event.preventDefault();this.style.borderColor='#0a0a0a'"
+           ondragleave="this.style.borderColor='#e2e2e2'">
+        <div style="font-size:2.5rem;margin-bottom:0.5rem;">🖼️</div>
+        <div style="font-weight:600;font-size:0.9rem;">Tap to upload your artwork</div>
+        <div style="font-size:0.75rem;color:#888;margin-top:0.25rem;">JPG, PNG, WEBP supported</div>
+      </div>
+      <img id="preview" src="" alt="" style="display:none;width:100%;border-radius:12px;margin-top:0.75rem;max-height:350px;object-fit:cover;"/>
+      <input type="file" id="image" name="image" accept="image/*" style="display:none;" onchange="previewImage(this)"/>
+    </div>
+
+    <!-- Category -->
+    <div style="margin-bottom:1.25rem;">
+      <div style="font-size:0.72rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#888;margin-bottom:0.6rem;">Category</div>
+      <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+        {% for cat in categories %}
+        <label style="cursor:pointer;">
+          <input type="radio" name="category" value="{{ cat }}" style="display:none;"
+                 onchange="selectCat(this)"/>
+          <span class="cat-btn">{{ cat }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Tags -->
+    <div style="margin-bottom:1.25rem;">
+      <div style="font-size:0.72rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#888;margin-bottom:0.4rem;">Tags</div>
+      <input type="text" name="tags" class="form-input"
+             placeholder="#lusaka #abstract #portrait (space or comma separated)"/>
+      <div style="font-size:0.72rem;color:#888;margin-top:0.3rem;">Up to 10 tags</div>
+    </div>
+
+    <!-- Caption -->
+    <div style="margin-bottom:1.25rem;">
+      <div style="font-size:0.72rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#888;margin-bottom:0.4rem;">Caption</div>
+      <textarea name="caption" class="form-input"
+                placeholder="Share what this piece means to you..."
+                rows="3"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-black btn-full">Share Post 🎨</button>
+    <a href="{{ url_for('create_poll') }}"
+       class="btn btn-outline btn-full" style="margin-top:0.5rem;">
+      🗳️ Create a Poll instead
+    </a>
+  </form>
+</div>
+
+{% endblock %}
+
+{% block extra_style %}
+<style>
+  .cat-btn {
+    display:inline-block; padding:0.35rem 0.75rem;
+    border:1.5px solid #e2e2e2; border-radius:20px;
+    font-size:0.8rem; font-weight:500; transition:all 0.15s;
+    background:#fff; color:#444;
+  }
+  input[type=radio]:checked + .cat-btn {
+    background:#0a0a0a; color:#fff; border-color:#0a0a0a;
+  }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function selectCat(input) {
+    document.querySelectorAll('.cat-btn').forEach(b => {
+      b.style.background = '#fff';
+      b.style.color = '#444';
+      b.style.borderColor = '#e2e2e2';
+    });
+    const btn = input.nextElementSibling;
+    btn.style.background = '#0a0a0a';
+    btn.style.color = '#fff';
+    btn.style.borderColor = '#0a0a0a';
+  }
+
+  function previewImage(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const preview = document.getElementById('preview');
+        const area    = document.getElementById('upload-area');
+        preview.src   = e.target.result;
+        preview.style.display = 'block';
+        area.style.display    = 'none';
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+</script>
+{% endblock %}

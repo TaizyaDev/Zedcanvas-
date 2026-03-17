@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Verify Email — ZedCanvas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root { --black:#0a0a0a; --white:#f8f8f8; --gray4:#888; --gray6:#e2e2e2; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'DM Sans',sans-serif; background:var(--black); min-height:100vh;
+           display:flex; align-items:center; justify-content:center; padding:1.5rem; }
+    .box { background:var(--white); border-radius:16px; padding:2.5rem 1.75rem;
+           width:100%; max-width:380px; text-align:center; }
+    .logo { font-family:'Bebas Neue',sans-serif; font-size:2rem; letter-spacing:0.05em; margin-bottom:1rem; }
+    .icon { font-size:3rem; margin-bottom:0.75rem; }
+    .title { font-size:1.15rem; font-weight:700; margin-bottom:0.4rem; }
+    .subtitle { color:var(--gray4); font-size:0.85rem; margin-bottom:1.75rem; line-height:1.6; }
+    .email-tag { background:#f0f0f0; padding:0.25rem 0.75rem; border-radius:20px;
+                 font-size:0.82rem; font-weight:600; }
+    .flash { padding:0.7rem 1rem; border-radius:8px; font-size:0.85rem;
+             font-weight:500; margin-bottom:1rem; }
+    .flash.error   { background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; }
+    .flash.success { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
+
+    /* Code input */
+    .code-wrap { display:flex; gap:0.5rem; justify-content:center; margin-bottom:1.5rem; }
+    .code-input {
+      width:46px; height:56px; border:2px solid var(--gray6);
+      border-radius:10px; text-align:center; font-size:1.5rem;
+      font-weight:700; font-family:'DM Sans',sans-serif;
+      color:var(--black); background:#fff; transition:border-color 0.2s;
+      -webkit-appearance:none;
+    }
+    .code-input:focus { outline:none; border-color:var(--black); }
+
+    .btn { width:100%; padding:0.85rem; border-radius:10px; border:none;
+           background:var(--black); color:var(--white);
+           font-family:'DM Sans',sans-serif; font-size:0.95rem;
+           font-weight:700; cursor:pointer; margin-bottom:0.75rem; }
+    .btn:hover { background:#222; }
+    .resend-form { margin-top:0.5rem; }
+    .resend-btn {
+      background:none; border:none; color:var(--gray4);
+      font-size:0.85rem; cursor:pointer; text-decoration:underline;
+      font-family:'DM Sans',sans-serif;
+    }
+    .resend-btn:hover { color:var(--black); }
+    .back-link { display:block; margin-top:1rem; font-size:0.8rem;
+                 color:var(--gray4); text-decoration:none; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="logo">ZedCanvas</div>
+    <div class="icon">📧</div>
+    <div class="title">Check your inbox</div>
+    <div class="subtitle">
+      We sent a 6-digit code to<br/>
+      <span class="email-tag">{{ email }}</span><br/><br/>
+      Enter it below to verify your account
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="flash {{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('verify') }}" id="verify-form">
+      <div class="code-wrap">
+        <input type="text" maxlength="1" class="code-input" id="c1" data-next="c2"/>
+        <input type="text" maxlength="1" class="code-input" id="c2" data-prev="c1" data-next="c3"/>
+        <input type="text" maxlength="1" class="code-input" id="c3" data-prev="c2" data-next="c4"/>
+        <input type="text" maxlength="1" class="code-input" id="c4" data-prev="c3" data-next="c5"/>
+        <input type="text" maxlength="1" class="code-input" id="c5" data-prev="c4" data-next="c6"/>
+        <input type="text" maxlength="1" class="code-input" id="c6" data-prev="c5"/>
+      </div>
+      <input type="hidden" name="code" id="full-code"/>
+      <button type="submit" class="btn" onclick="assembleCode()">Verify Account ✅</button>
+    </form>
+
+    <div class="resend-form">
+      <form method="POST" action="{{ url_for('resend_code') }}">
+        Didn't get it? <button type="submit" class="resend-btn">Resend code</button>
+      </form>
+    </div>
+
+    <a href="{{ url_for('signup') }}" class="back-link">← Back to sign up</a>
+  </div>
+
+  <script>
+    // Auto-advance between code boxes
+    document.querySelectorAll('.code-input').forEach(input => {
+      input.addEventListener('input', () => {
+        if (input.value && input.dataset.next) {
+          document.getElementById(input.dataset.next).focus();
+        }
+      });
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Backspace' && !input.value && input.dataset.prev) {
+          document.getElementById(input.dataset.prev).focus();
+        }
+      });
+    });
+
+    function assembleCode() {
+      const code = ['c1','c2','c3','c4','c5','c6']
+        .map(id => document.getElementById(id).value).join('');
+      document.getElementById('full-code').value = code;
+    }
+
+    // Focus first input on load
+    document.getElementById('c1').focus();
+  </script>
+</body>
+</html>

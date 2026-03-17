@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Search — ZedCanvas{% endblock %}
+
+{% block extra_style %}
+<style>
+  .search-bar-wrap {
+    position:sticky; top:56px; z-index:80;
+    background:var(--white); padding:0.75rem 0;
+    border-bottom:1px solid var(--gray6); margin:0 -1rem;
+    padding-left:1rem; padding-right:1rem;
+  }
+  .search-input-wrap { display:flex; gap:0.5rem; }
+  .search-input {
+    flex:1; padding:0.7rem 1rem; border:1.5px solid var(--gray6);
+    border-radius:25px; font-family:'DM Sans',sans-serif;
+    font-size:0.95rem; background:var(--gray7);
+    outline:none; transition:all 0.2s; color:var(--black);
+  }
+  .search-input:focus { border-color:var(--black); background:#fff; }
+  .search-btn {
+    padding:0.7rem 1.2rem; background:var(--black); color:var(--white);
+    border:none; border-radius:25px; font-weight:600;
+    font-size:0.88rem; cursor:pointer;
+  }
+  .tabs { display:flex; gap:0; margin:1rem 0 0.75rem;
+          border-bottom:2px solid var(--gray6); }
+  .tab {
+    padding:0.6rem 1.25rem; font-size:0.85rem; font-weight:600;
+    color:var(--gray4); cursor:pointer; border-bottom:2px solid transparent;
+    margin-bottom:-2px; transition:all 0.15s; text-decoration:none;
+  }
+  .tab.active { color:var(--black); border-bottom-color:var(--black); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Search bar -->
+<div class="search-bar-wrap">
+  <form method="GET" action="{{ url_for('search') }}" class="search-input-wrap">
+    <input type="text" name="q" class="search-input"
+           placeholder="Search artists, art styles, captions..."
+           value="{{ query }}" autofocus/>
+    <button type="submit" class="search-btn">Search</button>
+  </form>
+</div>
+
+{% if not query %}
+  <div class="empty" style="padding-top:3rem;">
+    <div class="empty-icon">🔍</div>
+    <h3>Find artists & art</h3>
+    <p style="font-size:0.88rem;">Search by name, username, art style or caption</p>
+  </div>
+
+{% else %}
+  <!-- Tabs -->
+  <div class="tabs">
+    <a href="#artists" class="tab active" onclick="showTab('artists', this)">
+      Artists ({{ users|length }})
+    </a>
+    <a href="#posts" class="tab" onclick="showTab('posts', this)">
+      Posts ({{ posts|length }})
+    </a>
+  </div>
+
+  <!-- Artists results -->
+  <div id="tab-artists">
+    {% if users %}
+      <div class="card" style="padding:0 1rem;">
+        {% for user in users %}
+        <div class="user-row">
+          <a href="{{ url_for('profile', username=user.username) }}">
+            {% if user.avatar %}
+              <img src="{{ user.avatar }}"
+                   class="avatar" style="width:46px;height:46px;" alt=""/>
+            {% else %}
+              <div class="avatar-ph" style="width:46px;height:46px;font-size:1rem;">
+                {{ user.username[0].upper() }}
+              </div>
+            {% endif %}
+          </a>
+          <div class="user-info">
+            <a href="{{ url_for('profile', username=user.username) }}" class="user-name">
+              @{{ user.username }}
+            </a>
+            <div class="user-sub">
+              {{ user.full_name }} · {{ user.art_style or 'Artist' }}
+            </div>
+          </div>
+          {% if user.id != me.id %}
+          <button class="btn btn-sm {{ 'btn-gray' if user.id in me.following else 'btn-outline' }} follow-btn"
+                  data-uid="{{ user.id }}" onclick="toggleFollow(this)">
+            {{ 'Following' if user.id in me.following else 'Follow' }}
+          </button>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty">
+        <div class="empty-icon">👤</div>
+        <h3>No artists found</h3>
+        <p style="font-size:0.85rem;">Try a different name or art style</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Posts results -->
+  <div id="tab-posts" style="display:none;">
+    {% if posts %}
+      {% for post in posts %}
+      <div class="card">
+        <div class="post-header">
+          <a href="{{ url_for('profile', username=post.author.username) }}">
+            {% if post.author.avatar %}
+              <img src="{{ post.author.avatar }}" class="post-avatar" alt=""/>
+            {% else %}
+              <div class="post-avatar-ph">{{ post.author.username[0].upper() }}</div>
+            {% endif %}
+          </a>
+          <div class="post-author">
+            <a href="{{ url_for('profile', username=post.author.username) }}" class="post-username">
+              @{{ post.author.username }}
+            </a>
+            <div class="post-time">{{ post.time_ago }}</div>
+          </div>
+        </div>
+        {% if post.image %}
+          <img src="{{ post.image }}" class="post-image" alt=""/>
+        {% endif %}
+        <div class="post-actions">
+          <button class="action-btn like-btn {{ 'liked' if post.liked }}"
+                  data-post-id="{{ post.id }}" onclick="toggleLike(this)">
+            {{ '🖤' if post.liked else '🤍' }}
+            <span class="action-count">{{ post.likes|length }}</span>
+          </button>
+        </div>
+        {% if post.caption %}
+        <div class="post-caption">
+          <strong>@{{ post.author.username }}</strong> {{ post.caption }}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">
+        <div class="empty-icon">🖼️</div>
+        <h3>No posts found</h3>
+        <p style="font-size:0.85rem;">Try different keywords</p>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function showTab(name, el) {
+    document.getElementById('tab-artists').style.display = name === 'artists' ? 'block' : 'none';
+    document.getElementById('tab-posts').style.display   = name === 'posts'   ? 'block' : 'none';
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    event.preventDefault();
+  }
+
+  function toggleLike(btn) {
+    const postId = btn.dataset.postId;
+    fetch(`/post/${postId}/like`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        btn.innerHTML = (data.liked ? '🖤' : '🤍') + ` <span class="action-count">${data.count}</span>`;
+      });
+  }
+
+  function toggleFollow(btn) {
+    fetch(`/follow/${btn.dataset.uid}`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        btn.textContent = data.following ? 'Following' : 'Follow';
+        btn.className = `btn btn-sm ${data.following ? 'btn-gray' : 'btn-outline'} follow-btn`;
+      });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Challenges — ZedCanvas{% endblock %}
+
+{% block extra_style %}
+<style>
+  .challenge-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:14px; padding:1.25rem;
+    margin-bottom:1rem; transition:transform 0.15s, box-shadow 0.15s;
+    text-decoration:none; color:var(--text); display:block;
+  }
+  .challenge-card:hover { transform:translateY(-2px);
+    box-shadow:0 6px 20px rgba(0,0,0,0.08); }
+  .challenge-header { display:flex; justify-content:space-between;
+                      align-items:flex-start; margin-bottom:0.6rem; }
+  .challenge-title { font-family:'Playfair Display',serif;
+                     font-size:1.1rem; font-weight:700; }
+  .status-pill { font-size:0.7rem; font-weight:700; letter-spacing:0.06em;
+                 text-transform:uppercase; padding:0.25rem 0.7rem;
+                 border-radius:20px; white-space:nowrap; }
+  .status-active   { background:var(--invert); color:var(--invert-text); }
+  .status-upcoming { background:var(--subtle); color:var(--muted); }
+  .status-ended    { background:var(--subtle); color:var(--muted); }
+  .challenge-desc { font-size:0.85rem; color:var(--muted);
+                    margin-bottom:0.75rem; line-height:1.5; }
+  .challenge-meta { display:flex; gap:1rem; font-size:0.78rem; color:var(--muted); flex-wrap:wrap; }
+  .challenge-meta span { display:flex; align-items:center; gap:0.3rem; }
+  .section-head {
+    font-family:'Bebas Neue',sans-serif; font-size:1.1rem;
+    letter-spacing:0.08em; margin:1.25rem 0 0.75rem;
+    display:flex; align-items:center; gap:0.5rem;
+  }
+  .empty-challenges { text-align:center; padding:2rem 1rem;
+                      color:var(--muted); font-size:0.88rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:0.08em;">
+    Art Challenges 🎭
+  </div>
+  {% if owner %}
+    <a href="{{ url_for('create_challenge') }}" class="btn btn-black btn-sm">+ Create</a>
+  {% endif %}
+</div>
+
+<!-- Active -->
+<div class="section-head">
+  <span style="width:8px;height:8px;border-radius:50%;background:var(--invert);display:inline-block;"></span>
+  Active Now
+</div>
+{% if active %}
+  {% for c in active %}
+  <a href="{{ url_for('challenge_detail', cid=c.id) }}" class="challenge-card">
+    <div class="challenge-header">
+      <div class="challenge-title">{{ c.title }}</div>
+      <span class="status-pill status-active">{{ c.time_left }}</span>
+    </div>
+    <div class="challenge-desc">{{ c.description }}</div>
+    <div class="challenge-meta">
+      {% if c.category %}<span>🎨 {{ c.category }}</span>{% endif %}
+      <span>📅 Ends {{ c.end_date }}</span>
+      {% if c.prize %}<span>🏆 {{ c.prize }}</span>{% endif %}
+    </div>
+  </a>
+  {% endfor %}
+{% else %}
+  <div class="empty-challenges">No active challenges right now — check back soon!</div>
+{% endif %}
+
+<!-- Upcoming -->
+{% if upcoming %}
+<div class="section-head">⏳ Coming Soon</div>
+{% for c in upcoming %}
+<a href="{{ url_for('challenge_detail', cid=c.id) }}" class="challenge-card">
+  <div class="challenge-header">
+    <div class="challenge-title">{{ c.title }}</div>
+    <span class="status-pill status-upcoming">Starts {{ c.start_date }}</span>
+  </div>
+  <div class="challenge-desc">{{ c.description }}</div>
+  <div class="challenge-meta">
+    {% if c.category %}<span>🎨 {{ c.category }}</span>{% endif %}
+    {% if c.prize %}<span>🏆 {{ c.prize }}</span>{% endif %}
+  </div>
+</a>
+{% endfor %}
+{% endif %}
+
+<!-- Ended -->
+{% if ended %}
+<div class="section-head">✓ Past Challenges</div>
+{% for c in ended %}
+<a href="{{ url_for('challenge_detail', cid=c.id) }}" class="challenge-card"
+   style="opacity:0.7;">
+  <div class="challenge-header">
+    <div class="challenge-title">{{ c.title }}</div>
+    <span class="status-pill status-ended">Ended</span>
+  </div>
+  <div class="challenge-meta">
+    {% if c.category %}<span>🎨 {{ c.category }}</span>{% endif %}
+    <span>📅 {{ c.start_date }} → {{ c.end_date }}</span>
+  </div>
+</a>
+{% endfor %}
+{% endif %}
+
+{% endblock %}

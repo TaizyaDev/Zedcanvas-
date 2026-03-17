@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Saved — ZedCanvas{% endblock %}
+{% block content %}
+
+<div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:0.08em;margin-bottom:1.25rem;">
+  Saved Posts 🔖
+</div>
+
+{% if posts %}
+  {% for post in posts %}
+  <div class="card">
+    <div class="post-header">
+      <a href="{{ url_for('profile', username=post.author.username) }}">
+        {% if post.author.avatar %}
+          <img src="{{ post.author.avatar }}" class="post-avatar" alt=""/>
+        {% else %}
+          <div class="post-avatar-ph">{{ post.author.username[0].upper() }}</div>
+        {% endif %}
+      </a>
+      <div class="post-author">
+        <a href="{{ url_for('profile', username=post.author.username) }}" class="post-username">
+          @{{ post.author.username }}
+        </a>
+        <div class="post-time">{{ post.time_ago }}</div>
+      </div>
+    </div>
+    {% if post.image %}
+      <img src="{{ post.image }}" class="post-image" alt=""/>
+    {% endif %}
+    <div class="post-actions">
+      <button class="action-btn like-btn {{ 'liked' if post.liked }}"
+              data-post-id="{{ post.id }}" onclick="toggleLike(this)">
+        {{ '🖤' if post.liked else '🤍' }}
+        <span class="action-count">{{ post.likes|length }}</span>
+      </button>
+      <button class="action-btn bookmark-btn saved"
+              data-post-id="{{ post.id }}" onclick="toggleBookmark(this)"
+              title="Remove from saved">
+        🔖
+      </button>
+    </div>
+    {% if post.caption %}
+    <div class="post-caption">
+      <strong>@{{ post.author.username }}</strong> {{ post.caption }}
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="empty">
+    <div class="empty-icon">🔖</div>
+    <h3>No saved posts yet</h3>
+    <p style="font-size:0.88rem;margin:0.5rem 0 1.5rem;">
+      Tap the 🔖 on any post to save it here
+    </p>
+    <a href="{{ url_for('discover') }}" class="btn btn-black btn-sm">Discover Posts</a>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleLike(btn) {
+    fetch(`/post/${btn.dataset.postId}/like`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        btn.innerHTML = (data.liked ? '🖤' : '🤍') + ` <span class="action-count">${data.count}</span>`;
+      });
+  }
+  function toggleBookmark(btn) {
+    fetch(`/post/${btn.dataset.postId}/bookmark`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.saved) {
+          btn.closest('.card').style.opacity = '0';
+          setTimeout(() => btn.closest('.card').remove(), 300);
+        }
+      });
+  }
+</script>
+{% endblock %}

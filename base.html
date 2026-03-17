@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}ZedCanvas{% endblock %}</title>
+  <meta name="theme-color" content="#0a0a0a"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-title" content="ZedCanvas"/>
+  <link rel="manifest" href="/static/manifest.json"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    :root{--bg:#f8f8f8;--surface:#ffffff;--border:#e2e2e2;--text:#0a0a0a;--muted:#888888;--subtle:#f0f0f0;--invert:#0a0a0a;--invert-text:#f8f8f8;--radius:12px;}
+    [data-theme="dark"]{--bg:#0a0a0a;--surface:#1a1a1a;--border:#2a2a2a;--text:#f8f8f8;--muted:#666666;--subtle:#222222;--invert:#f8f8f8;--invert-text:#0a0a0a;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:80px;transition:background 0.2s,color 0.2s;}
+    .topnav{position:fixed;top:0;left:0;right:0;z-index:200;background:var(--bg);border-bottom:1px solid var(--border);padding:0 1.25rem;height:56px;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(12px);}
+    .nav-logo{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:0.05em;color:var(--text);text-decoration:none;}
+    .nav-actions{display:flex;align-items:center;gap:0.25rem;}
+    .nav-btn{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--text);text-decoration:none;transition:background 0.15s;position:relative;}
+    .nav-btn:hover{background:var(--subtle);}
+    .notif-dot{position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--text);border:2px solid var(--bg);}
+    .nav-avatar{width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid var(--border);}
+    .nav-avatar-ph{width:30px;height:30px;border-radius:50%;background:var(--invert);color:var(--invert-text);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;}
+    .icon{display:inline-block;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle;flex-shrink:0;}
+    .icon-sm{width:18px;height:18px;}
+    .menu-wrap{position:relative;}
+    .menu-dropdown{position:absolute;top:calc(100% + 8px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:14px;min-width:220px;z-index:300;box-shadow:0 8px 32px rgba(0,0,0,0.12);overflow:hidden;display:none;animation:menuIn 0.15s ease;}
+    @keyframes menuIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+    .menu-dropdown.open{display:block;}
+    .menu-item{display:flex;align-items:center;gap:0.75rem;padding:0.85rem 1rem;cursor:pointer;color:var(--text);text-decoration:none;font-size:0.9rem;font-weight:500;transition:background 0.12s;border:none;background:none;width:100%;text-align:left;}
+    .menu-item:hover{background:var(--subtle);}
+    .menu-item.danger{color:#e53e3e;}
+    .menu-item.danger:hover{background:#fff5f5;}
+    .menu-icon-wrap{width:34px;height:34px;border-radius:10px;background:var(--subtle);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .menu-divider{height:1px;background:var(--border);margin:0.25rem 0;}
+    .menu-label{font-size:0.72rem;color:var(--muted);padding:0.5rem 1rem 0.25rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;}
+    .bottomnav{position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--bg);border-top:1px solid var(--border);display:flex;align-items:center;height:60px;}
+    .bnav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;color:var(--muted);font-size:0.58rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;flex:1;height:100%;transition:color 0.15s;position:relative;}
+    .bnav-item.active{color:var(--text);}
+    .bnav-item.active .bnav-pip{display:block;}
+    .bnav-pip{display:none;position:absolute;top:0;left:50%;transform:translateX(-50%);width:20px;height:3px;background:var(--text);border-radius:0 0 3px 3px;}
+    .bnav-post{display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:14px;background:var(--invert);color:var(--invert-text);margin-bottom:4px;}
+    main{max-width:600px;margin:0 auto;padding:calc(56px + 1rem) 1rem 1rem;}
+    .flashes{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:250;width:90%;max-width:400px;}
+    .flash{padding:0.75rem 1rem;border-radius:10px;font-size:0.88rem;font-weight:500;margin-bottom:0.5rem;text-align:center;animation:slideDown 0.3s ease;box-shadow:0 4px 16px rgba(0,0,0,0.1);}
+    @keyframes slideDown{from{transform:translateY(-10px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .flash.success{background:var(--invert);color:var(--invert-text);}
+    .flash.error{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1rem;}
+    .post-header{display:flex;align-items:center;gap:0.75rem;padding:0.85rem 1rem;}
+    .post-avatar{width:38px;height:38px;border-radius:50%;object-fit:cover;}
+    .post-avatar-ph{width:38px;height:38px;border-radius:50%;background:var(--invert);color:var(--invert-text);display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;flex-shrink:0;}
+    .post-author{flex:1;}
+    .post-username{font-weight:600;font-size:0.9rem;text-decoration:none;color:var(--text);}
+    .post-time{font-size:0.75rem;color:var(--muted);}
+    .post-image{width:100%;aspect-ratio:1;object-fit:cover;display:block;}
+    .post-actions{display:flex;align-items:center;gap:0.1rem;padding:0.4rem 0.6rem;}
+    .action-btn{background:none;border:none;cursor:pointer;padding:0.4rem 0.5rem;border-radius:8px;display:flex;align-items:center;gap:0.3rem;color:var(--text);transition:background 0.12s;font-size:0.82rem;font-weight:600;}
+    .action-btn:hover{background:var(--subtle);}
+    .post-caption{padding:0 1rem 0.75rem;font-size:0.9rem;line-height:1.6;color:var(--text);}
+    .post-caption strong{font-weight:600;margin-right:0.4rem;}
+    .comments-section{padding:0 1rem;border-top:1px solid var(--border);}
+    .comment{display:flex;gap:0.6rem;padding:0.6rem 0;border-bottom:1px solid var(--subtle);}
+    .comment:last-child{border-bottom:none;}
+    .comment-av{width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+    .comment-av-ph{width:28px;height:28px;border-radius:50%;background:var(--subtle);color:var(--text);display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;flex-shrink:0;}
+    .comment-body{flex:1;}
+    .comment-user{font-weight:600;font-size:0.82rem;}
+    .comment-text{font-size:0.85rem;color:var(--muted);}
+    .comment-form{display:flex;gap:0.5rem;padding:0.75rem 1rem;border-top:1px solid var(--border);}
+    .comment-input{flex:1;border:1px solid var(--border);border-radius:20px;padding:0.5rem 1rem;font-family:'DM Sans',sans-serif;font-size:0.88rem;background:var(--subtle);color:var(--text);outline:none;transition:border-color 0.2s;}
+    .comment-input:focus{border-color:var(--text);background:var(--surface);}
+    .comment-submit{background:var(--invert);color:var(--invert-text);border:none;border-radius:20px;padding:0.5rem 1rem;font-size:0.82rem;font-weight:600;cursor:pointer;}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:0.4rem;padding:0.6rem 1.4rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:600;cursor:pointer;border:none;text-decoration:none;transition:all 0.18s;}
+    .btn-black{background:var(--invert);color:var(--invert-text);}
+    .btn-black:hover{opacity:0.85;}
+    .btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--text);}
+    .btn-outline:hover{background:var(--text);color:var(--bg);}
+    .btn-gray{background:var(--subtle);color:var(--muted);border:1px solid var(--border);}
+    .btn-gray:hover{background:var(--border);}
+    .btn-sm{padding:0.35rem 0.9rem;font-size:0.8rem;border-radius:20px;}
+    .btn-full{width:100%;display:flex;padding:0.85rem;}
+    .form-group{margin-bottom:1rem;}
+    .form-label{display:block;font-size:0.75rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem;}
+    .form-input{width:100%;padding:0.8rem 1rem;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.95rem;background:var(--surface);color:var(--text);transition:border-color 0.2s;-webkit-appearance:none;}
+    .form-input:focus{outline:none;border-color:var(--text);}
+    textarea.form-input{resize:vertical;min-height:80px;}
+    .avatar{border-radius:50%;object-fit:cover;}
+    .avatar-ph{border-radius:50%;background:var(--invert);color:var(--invert-text);display:flex;align-items:center;justify-content:center;font-weight:700;}
+    .empty{text-align:center;padding:4rem 1rem;color:var(--muted);}
+    .empty-icon{font-size:3rem;margin-bottom:0.75rem;}
+    .empty h3{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--text);margin-bottom:0.5rem;}
+    .user-row{display:flex;align-items:center;gap:0.75rem;padding:0.85rem 0;border-bottom:1px solid var(--subtle);}
+    .user-row:last-child{border-bottom:none;}
+    .user-info{flex:1;}
+    .user-name{font-weight:600;font-size:0.9rem;text-decoration:none;color:var(--text);}
+    .user-sub{font-size:0.78rem;color:var(--muted);margin-top:1px;}
+    .verified-badge{display:inline-flex;align-items:center;justify-content:center;background:var(--invert);color:var(--invert-text);border-radius:50%;width:16px;height:16px;font-size:0.6rem;margin-left:2px;vertical-align:middle;flex-shrink:0;}
+  </style>
+  {% block extra_style %}{% endblock %}
+</head>
+<body>
+  <script>
+    (function(){
+      var t=localStorage.getItem('zc-theme')||'light';
+      document.documentElement.setAttribute('data-theme',t);
+    })();
+  </script>
+
+  <nav class="topnav">
+    <a href="{{ url_for('feed') }}" class="nav-logo">ZedCanvas</a>
+    <div class="nav-actions">
+      <a href="{{ url_for('notifications') }}" class="nav-btn">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        {% if notif_count and notif_count > 0 %}<span class="notif-dot"></span>{% endif %}
+      </a>
+      <div class="menu-wrap">
+        <button class="nav-btn" onclick="toggleMenu()">
+          <svg class="icon" viewBox="0 0 24 24">
+            <circle cx="12" cy="5" r="1" fill="currentColor" stroke="none"/>
+            <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>
+            <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/>
+          </svg>
+        </button>
+        <div class="menu-dropdown" id="menu-dropdown">
+          <!-- Profile card -->
+          <a href="{{ url_for('profile', username=me.username) }}" class="menu-item">
+            <div class="menu-icon-wrap">
+              {% if me and me.avatar %}
+                <img src="{{ me.avatar }}" style="width:34px;height:34px;border-radius:10px;object-fit:cover;" alt=""/>
+              {% else %}
+                <span style="font-weight:700;font-size:0.85rem;">{{ me.username[0].upper() if me else '?' }}</span>
+              {% endif %}
+            </div>
+            <div>
+              <div style="font-weight:700;font-size:0.88rem;">@{{ me.username if me else '' }}</div>
+              <div style="font-size:0.72rem;color:var(--muted);">View profile</div>
+            </div>
+          </a>
+          <div class="menu-divider"></div>
+          <div class="menu-label">Navigate</div>
+          <a href="{{ url_for('discover') }}" class="menu-item">
+            <div class="menu-icon-wrap"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></div>
+            Discover
+          </a>
+          <a href="{{ url_for('marketplace') }}" class="menu-item">
+            <div class="menu-icon-wrap"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+            Marketplace 🛒
+          </a>
+          <a href="{{ url_for('bookmarks') }}" class="menu-item">
+            <div class="menu-icon-wrap"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
+            Saved 🔖
+          </a>
+          <a href="{{ url_for('analytics') }}" class="menu-item">
+            <div class="menu-icon-wrap"><svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+            Analytics 📊
+          </a>
+          <a href="{{ url_for('create_poll') }}" class="menu-item">
+            <div class="menu-icon-wrap"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+            Create Poll 🗳️
+          </a>
+          <div class="menu-divider"></div>
+          <div class="menu-label">Account</div>
+          <a href="{{ url_for('settings') }}" class="menu-item">
+            <div class="menu-icon-wrap"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            Edit Profile
+          </a>
+          <button class="menu-item" onclick="toggleTheme()">
+            <div class="menu-icon-wrap">
+              <svg class="icon icon-sm" id="theme-icon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </div>
+            <span id="theme-label">Dark Mode</span>
+          </button>
+          <div class="menu-divider"></div>
+          <a href="{{ url_for('logout') }}" class="menu-item danger">
+            <div class="menu-icon-wrap" style="background:#fff5f5;">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" stroke="#e53e3e"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </div>
+            Log Out
+          </a>
+        </div>
+      </div>
+      <a href="{{ url_for('profile', username=me.username) }}" class="nav-btn">
+        {% if me and me.avatar %}
+          <img src="{{ me.avatar }}" class="nav-avatar" alt=""/>
+        {% else %}
+          <div class="nav-avatar-ph">{{ me.username[0].upper() if me else '?' }}</div>
+        {% endif %}
+      </a>
+    </div>
+  </nav>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flashes">
+        {% for cat, msg in messages %}
+          <div class="flash {{ cat }}">{{ msg }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <main>{% block content %}{% endblock %}</main>
+
+  <nav class="bottomnav">
+    <a href="{{ url_for('feed') }}" class="bnav-item {{ 'active' if request.endpoint == 'feed' }}">
+      <span class="bnav-pip"></span>
+      <svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="{{ url_for('search') }}" class="bnav-item {{ 'active' if request.endpoint == 'search' }}">
+      <span class="bnav-pip"></span>
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search</span>
+    </a>
+    <a href="{{ url_for('create_post') }}" class="bnav-item {{ 'active' if request.endpoint == 'create_post' }}">
+      <div class="bnav-post">
+        <svg class="icon" viewBox="0 0 24 24" stroke="var(--invert-text)"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+      <span>Post</span>
+    </a>
+    <a href="{{ url_for('messages') }}" class="bnav-item {{ 'active' if request.endpoint == 'messages' }}">
+      <span class="bnav-pip"></span>
+      <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Messages</span>
+    </a>
+    <a href="{{ url_for('profile', username=me.username) }}" class="bnav-item {{ 'active' if request.endpoint == 'profile' }}">
+      <span class="bnav-pip"></span>
+      <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Profile</span>
+    </a>
+  </nav>
+
+  <script>
+    function applyTheme(theme){
+      document.documentElement.setAttribute('data-theme',theme);
+      localStorage.setItem('zc-theme',theme);
+      var icon=document.getElementById('theme-icon');
+      var label=document.getElementById('theme-label');
+      if(!icon)return;
+      if(theme==='dark'){
+        icon.innerHTML='<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+        label.textContent='Light Mode';
+      }else{
+        icon.innerHTML='<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+        label.textContent='Dark Mode';
+      }
+    }
+    applyTheme(localStorage.getItem('zc-theme')||'light');
+    function toggleTheme(){
+      var current=document.documentElement.getAttribute('data-theme');
+      applyTheme(current==='dark'?'light':'dark');
+      closeMenu();
+    }
+    function toggleMenu(){document.getElementById('menu-dropdown').classList.toggle('open');}
+    function closeMenu(){document.getElementById('menu-dropdown').classList.remove('open');}
+    document.addEventListener('click',function(e){
+      var wrap=document.querySelector('.menu-wrap');
+      if(wrap&&!wrap.contains(e.target))closeMenu();
+    });
+    setTimeout(function(){
+      document.querySelectorAll('.flash').forEach(function(el){
+        el.style.transition='opacity 0.5s';
+        el.style.opacity='0';
+        setTimeout(function(){el.remove();},500);
+      });
+    },3000);
+    if('serviceWorker' in navigator)navigator.serviceWorker.register('/static/sw.js');
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

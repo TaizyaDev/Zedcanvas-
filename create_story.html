@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Add Story — ZedCanvas{% endblock %}
+
+{% block content %}
+
+<div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;
+            letter-spacing:0.08em;margin-bottom:1.25rem;">
+  Add Story 📷
+</div>
+
+<div style="background:var(--subtle);border-radius:10px;padding:0.85rem 1rem;
+            margin-bottom:1.25rem;font-size:0.85rem;color:var(--muted);
+            display:flex;align-items:center;gap:0.5rem;">
+  <svg class="icon icon-sm" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="12" y1="8" x2="12" y2="12"/>
+    <line x1="12" y1="16" x2="12.01" y2="16"/>
+  </svg>
+  Stories disappear automatically after <strong>24 hours</strong>
+</div>
+
+<div class="card" style="padding:1.5rem;">
+  <form method="POST" action="{{ url_for('create_story') }}" enctype="multipart/form-data">
+
+    <!-- Image -->
+    <div style="margin-bottom:1.25rem;">
+      <div class="form-label">Story Image *</div>
+      <div id="upload-area"
+           style="border:2px dashed var(--border);border-radius:12px;
+                  padding:3rem 1rem;text-align:center;cursor:pointer;
+                  background:var(--subtle);transition:all 0.18s;"
+           onclick="document.getElementById('image').click()">
+        <div style="font-size:2.5rem;margin-bottom:0.5rem;">📷</div>
+        <div style="font-weight:600;font-size:0.9rem;">Tap to upload</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:0.25rem;">
+          JPG, PNG, WEBP — max 5MB
+        </div>
+      </div>
+      <img id="preview" src="" style="display:none;width:100%;border-radius:12px;
+           margin-top:0.75rem;max-height:400px;object-fit:cover;" alt=""/>
+      <input type="file" id="image" name="image" accept="image/*"
+             style="display:none;" onchange="previewImg(this)" required/>
+    </div>
+
+    <!-- Caption -->
+    <div class="form-group">
+      <label class="form-label">Caption <span style="color:var(--muted);">(optional)</span></label>
+      <input type="text" name="caption" class="form-input"
+             placeholder="Add a caption..." maxlength="200"/>
+    </div>
+
+    <button type="submit" class="btn btn-black btn-full">Post Story 📷</button>
+    <a href="{{ url_for('feed') }}" class="btn btn-outline btn-full" style="margin-top:0.5rem;">
+      Cancel
+    </a>
+  </form>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function previewImg(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const preview = document.getElementById('preview');
+        const area    = document.getElementById('upload-area');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        area.style.display    = 'none';
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+</script>
+{% endblock %}

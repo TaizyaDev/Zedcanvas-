@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Events — ZedCanvas{% endblock %}
+
+{% block extra_style %}
+<style>
+  .event-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:14px; padding:1.25rem; margin-bottom:1rem;
+  }
+  .event-date-box {
+    background:var(--invert); color:var(--invert-text);
+    border-radius:10px; padding:0.5rem 0.75rem; text-align:center;
+    min-width:52px; flex-shrink:0;
+  }
+  .event-month { font-size:0.65rem; font-weight:700; letter-spacing:0.08em;
+                 text-transform:uppercase; opacity:0.7; }
+  .event-day   { font-family:'Bebas Neue',sans-serif; font-size:1.8rem;
+                 line-height:1; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:0.08em;">
+    Art Events 📅
+  </div>
+  <a href="{{ url_for('create_event') }}" class="btn btn-black btn-sm">+ Create</a>
+</div>
+
+{% if upcoming %}
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:1rem;
+              letter-spacing:0.08em;color:var(--muted);margin-bottom:0.75rem;">
+    Upcoming
+  </div>
+  {% for e in upcoming %}
+  <div class="event-card">
+    <div style="display:flex;gap:0.75rem;align-items:flex-start;">
+      <div class="event-date-box">
+        <div class="event-month">{{ e.date[5:7] | int | string | replace('1','Jan') }}</div>
+        <div class="event-day">{{ e.date[8:10] }}</div>
+      </div>
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:1rem;margin-bottom:0.3rem;">{{ e.title }}</div>
+        {% if e.description %}
+          <div style="font-size:0.85rem;color:var(--muted);line-height:1.5;margin-bottom:0.5rem;">
+            {{ e.description }}
+          </div>
+        {% endif %}
+        <div style="display:flex;flex-wrap:wrap;gap:0.75rem;font-size:0.78rem;color:var(--muted);">
+          {% if e.time %}<span>🕐 {{ e.time }}</span>{% endif %}
+          {% if e.location %}<span>📍 {{ e.location }}</span>{% endif %}
+          {% if e.city %}<span>🌍 {{ e.city }}</span>{% endif %}
+          <span>👥 {{ e.attendees|length }} going</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.75rem;">
+          <a href="{{ url_for('profile', username=e.organizer.username) }}"
+             style="font-size:0.78rem;color:var(--muted);text-decoration:none;">
+            by @{{ e.organizer.username if e.organizer else 'Unknown' }}
+          </a>
+          <button class="btn btn-sm {{ 'btn-gray' if e.attending else 'btn-black' }} rsvp-btn"
+                  data-eid="{{ e.id }}" onclick="toggleRSVP(this)">
+            {{ '✓ Going' if e.attending else 'RSVP' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="empty">
+    <div class="empty-icon">📅</div>
+    <h3>No upcoming events</h3>
+    <p style="font-size:0.88rem;margin:0.5rem 0 1.5rem;">
+      Create an art event for the community!
+    </p>
+    <a href="{{ url_for('create_event') }}" class="btn btn-black btn-sm">Create Event</a>
+  </div>
+{% endif %}
+
+{% if past %}
+<div style="font-family:'Bebas Neue',sans-serif;font-size:1rem;
+            letter-spacing:0.08em;color:var(--muted);margin:1.25rem 0 0.75rem;">
+  Past Events
+</div>
+{% for e in past %}
+<div class="event-card" style="opacity:0.6;">
+  <div style="display:flex;gap:0.75rem;align-items:center;">
+    <div class="event-date-box" style="background:var(--subtle);">
+      <div class="event-month" style="color:var(--muted);">{{ e.date[5:7] }}</div>
+      <div class="event-day" style="color:var(--text);">{{ e.date[8:10] }}</div>
+    </div>
+    <div>
+      <div style="font-weight:700;font-size:0.95rem;">{{ e.title }}</div>
+      {% if e.city %}<div style="font-size:0.78rem;color:var(--muted);">{{ e.city }}</div>{% endif %}
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleRSVP(btn) {
+    fetch(`/events/${btn.dataset.eid}/rsvp`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        btn.textContent = data.attending ? '✓ Going' : 'RSVP';
+        btn.className = `btn btn-sm ${data.attending ? 'btn-gray' : 'btn-black'} rsvp-btn`;
+      });
+  }
+</script>
+{% endblock %}

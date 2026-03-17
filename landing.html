@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ZedCanvas — Zambia's Art Network</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    :root { --black:#0a0a0a; --white:#f8f8f8; --gray3:#444; --gray4:#888; --gray6:#e2e2e2; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'DM Sans',sans-serif; background:var(--black); color:var(--white); min-height:100vh; }
+
+    /* Hero */
+    .hero {
+      min-height:100vh; display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      padding:2rem 1.5rem; text-align:center;
+      background: radial-gradient(ellipse at 50% 0%, #222 0%, var(--black) 70%);
+      position:relative; overflow:hidden;
+    }
+    .hero::before {
+      content:'';
+      position:absolute; inset:0;
+      background-image: repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.02) 40px, rgba(255,255,255,0.02) 41px),
+                        repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.02) 40px, rgba(255,255,255,0.02) 41px);
+    }
+    .hero-content { position:relative; z-index:1; }
+    .hero-tag {
+      display:inline-block; border:1px solid rgba(255,255,255,0.2);
+      padding:0.3rem 0.9rem; border-radius:20px;
+      font-size:0.75rem; letter-spacing:0.12em; text-transform:uppercase;
+      color:rgba(255,255,255,0.5); margin-bottom:1.5rem;
+    }
+    .hero-logo {
+      font-family:'Bebas Neue',sans-serif;
+      font-size:5rem; letter-spacing:0.05em;
+      line-height:1; margin-bottom:0.5rem;
+      background: linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.6) 100%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .hero-sub {
+      font-family:'Playfair Display',serif;
+      font-style:italic; font-size:1.1rem;
+      color:rgba(255,255,255,0.5); margin-bottom:3rem;
+    }
+    .hero-btns { display:flex; flex-direction:column; gap:0.75rem; width:100%; max-width:280px; margin:0 auto; }
+    .btn-white {
+      display:block; padding:0.9rem; border-radius:10px;
+      background:var(--white); color:var(--black);
+      text-decoration:none; font-weight:700; font-size:0.95rem;
+      text-align:center; transition:all 0.18s; letter-spacing:0.02em;
+    }
+    .btn-white:hover { background:#e8e8e8; transform:translateY(-1px); }
+    .btn-border {
+      display:block; padding:0.9rem; border-radius:10px;
+      border:1.5px solid rgba(255,255,255,0.3); color:var(--white);
+      text-decoration:none; font-weight:500; font-size:0.95rem;
+      text-align:center; transition:all 0.18s;
+    }
+    .btn-border:hover { border-color:var(--white); background:rgba(255,255,255,0.05); }
+
+    /* Features */
+    .features {
+      padding:4rem 1.5rem; background:var(--white); color:var(--black);
+    }
+    .features-title {
+      font-family:'Bebas Neue',sans-serif; font-size:2rem;
+      letter-spacing:0.08em; text-align:center; margin-bottom:2.5rem;
+    }
+    .features-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; max-width:500px; margin:0 auto; }
+    .feature-card {
+      background:var(--black); color:var(--white);
+      border-radius:12px; padding:1.5rem 1.25rem; text-align:center;
+    }
+    .feature-icon { font-size:2rem; margin-bottom:0.6rem; }
+    .feature-title { font-weight:700; font-size:0.9rem; margin-bottom:0.3rem; }
+    .feature-desc { font-size:0.78rem; color:rgba(255,255,255,0.5); line-height:1.5; }
+
+    /* Footer */
+    footer {
+      background:var(--black); color:rgba(255,255,255,0.3);
+      text-align:center; padding:2rem 1.5rem;
+      font-size:0.8rem; letter-spacing:0.05em;
+    }
+    footer span { color:rgba(255,255,255,0.6); }
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-tag">🇿🇲 Made for Zambian Artists</div>
+      <div class="hero-logo">ZedCanvas</div>
+      <div class="hero-sub">Where Zambian art comes alive</div>
+      <div class="hero-btns">
+        <a href="{{ url_for('signup') }}" class="btn-white">Join ZedCanvas</a>
+        <a href="{{ url_for('login') }}" class="btn-border">Sign In</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="features-title">Built for Artists</div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🎨</div>
+        <div class="feature-title">Share Work</div>
+        <div class="feature-desc">Post your artwork and get seen</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">👥</div>
+        <div class="feature-title">Connect</div>
+        <div class="feature-desc">Follow artists you love</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💬</div>
+        <div class="feature-title">Message</div>
+        <div class="feature-desc">Private chats with artists</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <div class="feature-title">Discover</div>
+        <div class="feature-desc">Find new Zambian talent</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>ZedCanvas</span> · Zambia's Art Network · 🇿🇲
+  </footer>
+</body>
+</html>

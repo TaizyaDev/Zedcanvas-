@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Discover — ZedCanvas{% endblock %}
+
+{% block extra_style %}
+<style>
+  .cat-filter {
+    display:flex; gap:0.4rem; overflow-x:auto;
+    padding:0.75rem 0; margin-bottom:0.5rem;
+    scrollbar-width:none;
+  }
+  .cat-filter::-webkit-scrollbar { display:none; }
+  .cat-pill {
+    display:inline-block; white-space:nowrap;
+    padding:0.35rem 0.85rem; border-radius:20px;
+    font-size:0.8rem; font-weight:500;
+    border:1.5px solid #e2e2e2; background:#fff;
+    color:#444; text-decoration:none; transition:all 0.15s;
+    flex-shrink:0;
+  }
+  .cat-pill:hover { border-color:#0a0a0a; color:#0a0a0a; }
+  .cat-pill.active { background:#0a0a0a; color:#fff; border-color:#0a0a0a; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Category filter -->
+<div class="cat-filter">
+  <a href="{{ url_for('discover') }}"
+     class="cat-pill {{ 'active' if not active_cat }}">All</a>
+  {% for cat in categories %}
+    <a href="{{ url_for('discover', cat=cat) }}"
+       class="cat-pill {{ 'active' if active_cat == cat }}">{{ cat }}</a>
+  {% endfor %}
+</div>
+
+<!-- Suggested artists -->
+{% if suggestions %}
+<div class="section-title">Artists to Follow</div>
+<div class="card" style="padding:0.5rem 1rem;">
+  {% for user in suggestions[:8] %}
+  <div class="user-row">
+    <a href="{{ url_for('profile', username=user.username) }}">
+      {% if user.avatar %}
+        <img src="{{ user.avatar }}" class="avatar" style="width:44px;height:44px;" alt=""/>
+      {% else %}
+        <div class="avatar-ph" style="width:44px;height:44px;font-size:1rem;">{{ user.username[0].upper() }}</div>
+      {% endif %}
+    </a>
+    <div class="user-info">
+      <a href="{{ url_for('profile', username=user.username) }}" class="user-name">@{{ user.username }}{% if user.get('verified') %}<span class="verified-badge" title="Verified Artist">★</span>{% endif %}</a>
+      <div class="user-sub">{{ user.art_style or 'Artist' }} · {{ user.followers|length }} followers</div>
+    </div>
+    <button class="btn btn-outline btn-sm follow-btn"
+            data-uid="{{ user.id }}"
+            onclick="toggleFollow(this)">
+      {{ 'Following' if user.id in me.following else 'Follow' }}
+    </button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Recent posts from everyone -->
+<div class="section-title" style="margin-top:1rem;">Recent Posts</div>
+
+{% if posts %}
+  {% for post in posts %}
+  <div class="card">
+    <div class="post-header">
+      <a href="{{ url_for('profile', username=post.author.username) }}">
+        {% if post.author.avatar %}
+          <img src="{{ post.author.avatar }}" class="post-avatar" alt=""/>
+        {% else %}
+          <div class="post-avatar-ph">{{ post.author.username[0].upper() }}</div>
+        {% endif %}
+      </a>
+      <div class="post-author">
+        <a href="{{ url_for('profile', username=post.author.username) }}" class="post-username">@{{ post.author.username }}{% if post.author.get('verified') %}<span class="verified-badge" title="Verified Artist">★</span>{% endif %}</a>
+        <div class="post-time">{{ post.time_ago }}</div>
+      </div>
+    </div>
+    {% if post.image %}
+      <img src="{{ post.image }}" class="post-image" alt=""/>
+    {% endif %}
+    <div class="post-actions">
+      <button class="action-btn like-btn {{ 'liked' if post.liked }}"
+              data-post-id="{{ post.id }}" onclick="toggleLike(this)">
+        {{ '🖤' if post.liked else '🤍' }}
+        <span class="action-count">{{ post.likes|length }}</span>
+      </button>
+      <span class="action-btn">💬 <span class="action-count">{{ post.comments|length }}</span></span>
+    </div>
+    {% if post.caption %}
+    <div class="post-caption">
+      <strong>@{{ post.author.username }}</strong>{{ post.caption }}
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="empty">
+    <div class="empty-icon">🖼️</div>
+    <h3>No posts yet</h3>
+    <p style="font-size:0.88rem;">Be the first to share your art!</p>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleLike(btn) {
+    const postId = btn.dataset.postId;
+    fetch(`/post/${postId}/like`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        btn.innerHTML = (data.liked ? '🖤' : '🤍') + ` <span class="action-count">${data.count}</span>`;
+        btn.classList.toggle('liked', data.liked);
+      });
+  }
+
+  function toggleFollow(btn) {
+    const uid = btn.dataset.uid;
+    fetch(`/follow/${uid}`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        btn.textContent = data.following ? 'Following' : 'Follow';
+        btn.classList.toggle('btn-outline', !data.following);
+        btn.classList.toggle('btn-gray', data.following);
+      });
+  }
+</script>
+{% endblock %}

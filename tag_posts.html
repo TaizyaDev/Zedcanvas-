@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}#{{ tag }} — ZedCanvas{% endblock %}
+{% block content %}
+
+<div style="margin-bottom:1.25rem;">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:0.08em;">
+    #{{ tag }}
+  </div>
+  <div style="font-size:0.82rem;color:#888;margin-top:0.2rem;">
+    {{ posts|length }} post{{ 's' if posts|length != 1 }}
+  </div>
+</div>
+
+{% if posts %}
+  {% for post in posts %}
+  <div class="card">
+    <div class="post-header">
+      <a href="{{ url_for('profile', username=post.author.username) }}">
+        {% if post.author.avatar %}
+          <img src="{{ post.author.avatar }}" class="post-avatar" alt=""/>
+        {% else %}
+          <div class="post-avatar-ph">{{ post.author.username[0].upper() }}</div>
+        {% endif %}
+      </a>
+      <div class="post-author">
+        <a href="{{ url_for('profile', username=post.author.username) }}" class="post-username">
+          @{{ post.author.username }}
+        </a>
+        <div class="post-time">{{ post.time_ago }}</div>
+      </div>
+    </div>
+    {% if post.image %}
+      <img src="{{ post.image }}" class="post-image" alt=""/>
+    {% endif %}
+    <div class="post-actions">
+      <button class="action-btn like-btn {{ 'liked' if post.liked }}"
+              data-post-id="{{ post.id }}" onclick="toggleLike(this)">
+        {{ '🖤' if post.liked else '🤍' }}
+        <span class="action-count">{{ post.likes|length }}</span>
+      </button>
+      <span class="action-btn">💬 <span class="action-count">{{ post.comments|length }}</span></span>
+    </div>
+    {% if post.caption %}
+    <div class="post-caption">
+      <strong>@{{ post.author.username }}</strong> {{ post.caption }}
+    </div>
+    {% endif %}
+    {% if post.get('tags') %}
+    <div style="padding:0 1rem 0.75rem;display:flex;flex-wrap:wrap;gap:0.35rem;">
+      {% for t in post.get('tags', []) %}
+        <a href="{{ url_for('tag_posts', tag=t) }}"
+           style="color:#0a0a0a;font-size:0.78rem;font-weight:500;text-decoration:none;
+                  {{ 'font-weight:700;text-decoration:underline;' if t == tag }}">
+          #{{ t }}
+        </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="empty">
+    <div class="empty-icon">🏷️</div>
+    <h3>No posts yet</h3>
+    <p style="font-size:0.88rem;">Be the first to post under #{{ tag }}!</p>
+    <a href="{{ url_for('create_post') }}" class="btn btn-black btn-sm" style="margin-top:1rem;">
+      Create Post
+    </a>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleLike(btn) {
+    fetch(`/post/${btn.dataset.postId}/like`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        btn.innerHTML = (data.liked ? '🖤' : '🤍') + ` <span class="action-count">${data.count}</span>`;
+      });
+  }
+</script>
+{% endblock %}

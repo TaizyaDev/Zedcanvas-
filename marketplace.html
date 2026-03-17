@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Marketplace — ZedCanvas{% endblock %}
+
+{% block extra_style %}
+<style>
+  .market-grid {
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:0.75rem; margin-top:1rem;
+  }
+  .listing-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; overflow:hidden;
+    text-decoration:none; color:var(--text);
+    display:block; transition:transform 0.15s, box-shadow 0.15s;
+  }
+  .listing-card:hover { transform:translateY(-2px);
+    box-shadow:0 6px 20px rgba(0,0,0,0.1); }
+  .listing-img {
+    width:100%; aspect-ratio:1; object-fit:cover; display:block;
+  }
+  .listing-img-ph {
+    width:100%; aspect-ratio:1; background:var(--subtle);
+    display:flex; align-items:center; justify-content:center;
+    font-size:2rem;
+  }
+  .listing-info { padding:0.75rem; }
+  .listing-title {
+    font-weight:700; font-size:0.85rem;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    margin-bottom:0.25rem;
+  }
+  .listing-price {
+    font-family:'Bebas Neue',sans-serif; font-size:1.1rem;
+    letter-spacing:0.04em; color:var(--text);
+  }
+  .listing-seller {
+    font-size:0.72rem; color:var(--muted); margin-top:0.2rem;
+  }
+  .sold-badge {
+    position:absolute; top:0.5rem; right:0.5rem;
+    background:var(--invert); color:var(--invert-text);
+    font-size:0.65rem; font-weight:700; letter-spacing:0.06em;
+    text-transform:uppercase; padding:0.2rem 0.5rem; border-radius:20px;
+  }
+  .filter-bar {
+    display:flex; gap:0.4rem; overflow-x:auto;
+    padding:0.5rem 0; scrollbar-width:none; margin-bottom:0;
+  }
+  .filter-bar::-webkit-scrollbar { display:none; }
+  .filter-pill {
+    display:inline-block; white-space:nowrap;
+    padding:0.3rem 0.8rem; border-radius:20px;
+    font-size:0.78rem; font-weight:500;
+    border:1.5px solid var(--border); background:var(--surface);
+    color:var(--muted); text-decoration:none; flex-shrink:0;
+    transition:all 0.15s;
+  }
+  .filter-pill.active { background:var(--invert); color:var(--invert-text); border-color:var(--invert); }
+  .sort-bar {
+    display:flex; gap:0.4rem; margin-bottom:0.5rem; flex-wrap:wrap;
+  }
+  .sort-btn {
+    font-size:0.75rem; font-weight:600; padding:0.3rem 0.75rem;
+    border-radius:20px; border:1px solid var(--border);
+    background:var(--surface); color:var(--muted);
+    text-decoration:none; transition:all 0.15s;
+  }
+  .sort-btn.active { background:var(--invert); color:var(--invert-text); border-color:var(--invert); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:0.08em;">
+    Marketplace 🛒
+  </div>
+  <a href="{{ url_for('sell_artwork') }}" class="btn btn-black btn-sm">+ Sell</a>
+</div>
+
+<!-- Category filter -->
+<div class="filter-bar">
+  <a href="{{ url_for('marketplace') }}" class="filter-pill {{ 'active' if not active_cat }}">All</a>
+  {% for cat in categories %}
+    <a href="{{ url_for('marketplace', cat=cat, sort=sort) }}"
+       class="filter-pill {{ 'active' if active_cat == cat }}">{{ cat }}</a>
+  {% endfor %}
+</div>
+
+<!-- Sort -->
+<div class="sort-bar" style="margin-top:0.5rem;">
+  <a href="{{ url_for('marketplace', cat=active_cat, sort='newest') }}"
+     class="sort-btn {{ 'active' if sort == 'newest' }}">Newest</a>
+  <a href="{{ url_for('marketplace', cat=active_cat, sort='price_low') }}"
+     class="sort-btn {{ 'active' if sort == 'price_low' }}">Price ↑</a>
+  <a href="{{ url_for('marketplace', cat=active_cat, sort='price_high') }}"
+     class="sort-btn {{ 'active' if sort == 'price_high' }}">Price ↓</a>
+</div>
+
+{% if listings %}
+  <div class="market-grid">
+    {% for l in listings %}
+    <a href="{{ url_for('listing_detail', lid=l.id) }}" class="listing-card">
+      <div style="position:relative;">
+        {% if l.post.get('image') %}
+          <img src="{{ l.post.image }}" class="listing-img" alt=""/>
+        {% else %}
+          <div class="listing-img-ph">🎨</div>
+        {% endif %}
+        {% if l.status == 'sold' %}
+          <span class="sold-badge">Sold</span>
+        {% endif %}
+      </div>
+      <div class="listing-info">
+        <div class="listing-title">{{ l.title }}</div>
+        <div class="listing-price">{{ l.currency }} {{ "%.0f"|format(l.price) }}</div>
+        <div class="listing-seller">by @{{ l.seller.username if l.seller else 'Unknown' }}</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty" style="padding-top:3rem;">
+    <div class="empty-icon">🛒</div>
+    <h3>No listings yet</h3>
+    <p style="font-size:0.88rem;margin:0.5rem 0 1.5rem;">
+      Be the first to sell your artwork!
+    </p>
+    <a href="{{ url_for('sell_artwork') }}" class="btn btn-black btn-sm">List Artwork</a>
+  </div>
+{% endif %}
+
+{% endblock %}

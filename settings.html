@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Settings — ZedCanvas{% endblock %}
+{% block content %}
+
+<div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:0.08em;margin-bottom:1.25rem;">
+  Edit Profile
+</div>
+
+<div class="card" style="padding:1.5rem;">
+  <form method="POST" action="{{ url_for('settings') }}" enctype="multipart/form-data">
+
+    <!-- Avatar -->
+    <div style="display:flex;justify-content:center;margin-bottom:1.25rem;">
+      <div onclick="document.getElementById('photo').click()" style="cursor:pointer;position:relative;">
+        {% if me.avatar %}
+          <img id="preview" src="{{ me.avatar }}"
+               class="avatar" style="width:80px;height:80px;" alt=""/>
+        {% else %}
+          <div id="preview-ph" class="avatar-ph" style="width:80px;height:80px;font-size:1.8rem;">
+            {{ me.username[0].upper() }}
+          </div>
+          <img id="preview" src="" class="avatar" style="width:80px;height:80px;display:none;" alt=""/>
+        {% endif %}
+        <div style="position:absolute;bottom:0;right:0;background:#0a0a0a;color:#fff;
+                    width:24px;height:24px;border-radius:50%;display:flex;
+                    align-items:center;justify-content:center;font-size:0.75rem;">📷</div>
+      </div>
+    </div>
+    <input type="file" id="photo" name="photo" accept="image/*" style="display:none;" onchange="previewPhoto(this)"/>
+
+    <div class="form-group">
+      <label class="form-label">Full Name</label>
+      <input type="text" name="full_name" class="form-input" value="{{ me.full_name }}" required/>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Bio</label>
+      <textarea name="bio" class="form-input" placeholder="Tell the world about your art...">{{ me.bio }}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Art Style</label>
+      <select name="art_style" class="form-input">
+        <option value="">— Select —</option>
+        {% for style in art_styles %}
+          <option value="{{ style }}" {{ 'selected' if me.art_style == style }}>{{ style }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn-black btn-full">Save Changes</button>
+  </form>
+</div>
+
+<!-- Active Status Privacy -->
+<div class="card" style="padding:1.5rem;margin-top:1rem;">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;
+              letter-spacing:0.08em;margin-bottom:1rem;">
+    Active Status 🟢
+  </div>
+  <form method="POST" action="{{ url_for('update_active_status') }}">
+    <div class="form-group">
+      <label class="form-label">Who can see when you're online</label>
+      <div style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.4rem;">
+        {% for val, label in [('everyone','Everyone'),('followers','Followers only'),('nobody','Nobody')] %}
+        <label style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;
+                      border:1.5px solid var(--border);border-radius:10px;cursor:pointer;
+                      background:var(--surface);">
+          <input type="radio" name="active_status_privacy" value="{{ val }}"
+                 {{ 'checked' if me.get('active_status_privacy', 'everyone') == val }}
+                 style="width:16px;height:16px;accent-color:var(--invert);"/>
+          <span style="font-size:0.9rem;font-weight:500;">{{ label }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <button type="submit" class="btn btn-black btn-full" style="margin-top:0.5rem;">
+      Save Status Settings
+    </button>
+  </form>
+</div>
+
+<div style="text-align:center;margin-top:1rem;">
+  <a href="{{ url_for('logout') }}" style="color:#888;font-size:0.85rem;text-decoration:none;">
+    Sign Out
+  </a>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+  </form>
+</div>
+
+<div style="text-align:center;margin-top:1rem;">
+  <a href="{{ url_for('logout') }}" style="color:#888;font-size:0.85rem;text-decoration:none;">
+    Sign Out
+  </a>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function previewPhoto(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const preview = document.getElementById('preview');
+        const ph      = document.getElementById('preview-ph');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        if (ph) ph.style.display = 'none';
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+</script>
+{% endblock %}
